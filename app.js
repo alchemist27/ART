@@ -124,7 +124,7 @@ function renderBackgroundCategories() {
         const count = categoryCounts[cat.name] || 0;
         const option = document.createElement('option');
         option.value = cat.name;
-        option.textContent = `${cat.displayName || cat.name} (${count})`;
+        option.textContent = `${cat.name} (${count})`;
         bgCatDropdown.appendChild(option);
     });
 }

@@ -18,7 +18,6 @@ async function loadBackgroundCategoriesFromFirebase() {
             categories.push({
                 id: doc.id,
                 name: data.name,
-                displayName: data.displayName || data.name,
                 order: data.order || 0
             });
         });
@@ -43,7 +42,6 @@ async function loadBackgroundCategoriesFromFirebase() {
                 categories.push({
                     id: doc.id,
                     name: data.name,
-                    displayName: data.displayName || data.name,
                     order: data.order || 0
                 });
             });

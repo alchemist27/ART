@@ -98,8 +98,6 @@ class BackgroundCategoryService {
             const newCategory = {
                 id: categoryId,
                 name: categoryData.name,
-                displayName: categoryData.displayName || categoryData.name,
-                description: categoryData.description || '',
                 order: maxOrder + 1,
                 createdAt: serverTimestamp(),
                 updatedAt: serverTimestamp()
@@ -190,17 +188,17 @@ class BackgroundCategoryService {
             }
 
             const defaultCategories = [
-                { name: '기본배경', displayName: '기본배경', order: 1 },
-                { name: '키링', displayName: '키링', order: 2 },
-                { name: '스트랩', displayName: '스트랩', order: 3 },
-                { name: '모루인형', displayName: '모루인형', order: 4 },
-                { name: '비녀/뒤꽂이', displayName: '비녀/뒤꽂이', order: 5 },
-                { name: '팔찌', displayName: '팔찌', order: 6 },
-                { name: '목걸이', displayName: '목걸이', order: 7 },
-                { name: '반지', displayName: '반지', order: 8 },
-                { name: '귀걸이', displayName: '귀걸이', order: 9 },
-                { name: '데코덴 케이스', displayName: '데코덴 케이스', order: 10 },
-                { name: '스마트톡', displayName: '스마트톡', order: 11 }
+                { name: '기본배경', order: 1 },
+                { name: '키링', order: 2 },
+                { name: '스트랩', order: 3 },
+                { name: '모루인형', order: 4 },
+                { name: '비녀/뒤꽂이', order: 5 },
+                { name: '팔찌', order: 6 },
+                { name: '목걸이', order: 7 },
+                { name: '반지', order: 8 },
+                { name: '귀걸이', order: 9 },
+                { name: '데코덴 케이스', order: 10 },
+                { name: '스마트톡', order: 11 }
             ];
 
             const createPromises = defaultCategories.map(cat =>

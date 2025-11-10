@@ -86,7 +86,7 @@ export class BackgroundsPage {
             const count = categoryCounts[cat.name] || 0;
             const option = document.createElement('option');
             option.value = cat.name;
-            option.textContent = `${cat.displayName || cat.name} (${count})`;
+            option.textContent = `${cat.name} (${count})`;
             categoryFilter.appendChild(option);
         });
     }
@@ -229,7 +229,7 @@ export class BackgroundsPage {
     showUploadModal() {
         // Generate category options from Firebase
         const categoryOptions = this.categories.map(cat =>
-            `<option value="${cat.name}">${cat.displayName || cat.name}</option>`
+            `<option value="${cat.name}">${cat.name}</option>`
         ).join('');
 
         const modalHTML = `
@@ -437,13 +437,16 @@ export class BackgroundsPage {
                             <i class="fas fa-grip-vertical"></i>
                         </button>
                         <span class="category-order">${index + 1}</span>
-                        <span class="category-name">${cat.displayName || cat.name}</span>
+                        <input
+                            type="text"
+                            class="category-name-input"
+                            value="${cat.name}"
+                            data-category-id="${cat.id}"
+                            data-original-value="${cat.name}"
+                        />
                         <span class="category-count">(${count}개)</span>
                     </div>
                     <div class="category-actions">
-                        <button class="btn-icon" onclick="window.backgroundsPage.editCategory('${cat.id}')" title="수정">
-                            <i class="fas fa-edit"></i>
-                        </button>
                         <button class="btn-icon btn-delete" onclick="window.backgroundsPage.deleteCategory('${cat.id}')" title="삭제">
                             <i class="fas fa-trash"></i>
                         </button>
@@ -463,10 +466,19 @@ export class BackgroundsPage {
                         <div class="category-list" id="categoryList">
                             ${categoriesHTML}
                         </div>
-                        <button class="btn btn-primary" style="width: 100%; margin-top: 16px;" onclick="window.backgroundsPage.showAddCategoryForm()">
-                            <i class="fas fa-plus"></i>
-                            새 카테고리 추가
-                        </button>
+                        <div class="add-category-form" style="margin-top: 16px;">
+                            <input
+                                type="text"
+                                id="newCategoryInput"
+                                class="form-input"
+                                placeholder="새 카테고리 이름 입력..."
+                                style="margin-bottom: 8px;"
+                            />
+                            <button class="btn btn-primary" style="width: 100%;" onclick="window.backgroundsPage.addCategory()">
+                                <i class="fas fa-plus"></i>
+                                카테고리 추가
+                            </button>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -474,6 +486,69 @@ export class BackgroundsPage {
 
         document.body.insertAdjacentHTML('beforeend', modalHTML);
         this.setupDragAndDrop();
+        this.setupInlineEditing();
+    }
+
+    setupInlineEditing() {
+        const inputs = document.querySelectorAll('.category-name-input');
+
+        inputs.forEach(input => {
+            // Focus 시 전체 선택
+            input.addEventListener('focus', (e) => {
+                e.target.select();
+            });
+
+            // Blur 시 변경사항 저장
+            input.addEventListener('blur', async (e) => {
+                const newName = e.target.value.trim();
+                const originalName = e.target.dataset.originalValue;
+                const categoryId = e.target.dataset.categoryId;
+
+                if (newName && newName !== originalName) {
+                    await this.updateCategoryName(categoryId, newName);
+                } else if (!newName) {
+                    // 빈 값이면 원래 값으로 복구
+                    e.target.value = originalName;
+                }
+            });
+
+            // Enter 키로 저장
+            input.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') {
+                    e.target.blur();
+                }
+            });
+
+            // ESC 키로 취소
+            input.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape') {
+                    e.target.value = e.target.dataset.originalValue;
+                    e.target.blur();
+                }
+            });
+        });
+    }
+
+    async updateCategoryName(categoryId, newName) {
+        this.showLoading('카테고리 수정 중...');
+
+        try {
+            await backgroundCategoryService.updateCategory(categoryId, {
+                name: newName
+            });
+
+            this.showNotification('카테고리가 수정되었습니다!', 'success');
+            await this.loadCategories();
+
+            // 모달 다시 열기
+            this.hideCategoryModal();
+            this.showCategoryManagementModal();
+        } catch (error) {
+            console.error('Update category failed:', error);
+            this.showNotification('카테고리 수정에 실패했습니다.', 'error');
+        } finally {
+            this.hideLoading();
+        }
     }
 
     setupDragAndDrop() {
@@ -557,53 +632,12 @@ export class BackgroundsPage {
         document.getElementById('categoryModal')?.remove();
     }
 
-    showAddCategoryForm() {
-        const formHTML = `
-            <div class="modal-overlay" id="addCategoryModal">
-                <div class="modal-content" style="max-width: 500px;">
-                    <div class="modal-header">
-                        <h2>새 카테고리 추가</h2>
-                        <button class="modal-close" onclick="window.backgroundsPage.hideAddCategoryModal()">×</button>
-                    </div>
-                    <form id="addCategoryForm" class="upload-form">
-                        <div class="form-group">
-                            <label class="form-label">카테고리 이름</label>
-                            <input type="text" id="categoryNameInput" class="form-input" placeholder="예: 키링" required>
-                        </div>
-                        <div class="form-group">
-                            <label class="form-label">표시 이름 (선택사항)</label>
-                            <input type="text" id="categoryDisplayNameInput" class="form-input" placeholder="예: 키링">
-                        </div>
-                        <div class="form-actions">
-                            <button type="button" class="btn btn-secondary" style="flex: 1;" onclick="window.backgroundsPage.hideAddCategoryModal()">취소</button>
-                            <button type="submit" class="btn btn-primary" style="flex: 1;">추가</button>
-                        </div>
-                    </form>
-                </div>
-            </div>
-        `;
-
-        document.body.insertAdjacentHTML('beforeend', formHTML);
-
-        document.getElementById('addCategoryForm')?.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            await this.addCategory();
-        });
-    }
-
-    hideAddCategoryModal() {
-        document.getElementById('addCategoryModal')?.remove();
-    }
-
     async addCategory() {
-        const nameInput = document.getElementById('categoryNameInput');
-        const displayNameInput = document.getElementById('categoryDisplayNameInput');
-
-        const name = nameInput?.value.trim();
-        const displayName = displayNameInput?.value.trim() || name;
+        const input = document.getElementById('newCategoryInput');
+        const name = input?.value.trim();
 
         if (!name) {
-            alert('카테고리 이름을 입력해주세요.');
+            this.showNotification('카테고리 이름을 입력해주세요.', 'error');
             return;
         }
 
@@ -611,90 +645,19 @@ export class BackgroundsPage {
 
         try {
             await backgroundCategoryService.createCategory({
-                name,
-                displayName
+                name
             });
 
-            this.hideAddCategoryModal();
-            this.hideCategoryModal();
+            input.value = '';
             this.showNotification('카테고리가 추가되었습니다!', 'success');
             await this.loadCategories();
+
+            // 모달 다시 열기
+            this.hideCategoryModal();
+            this.showCategoryManagementModal();
         } catch (error) {
             console.error('Add category failed:', error);
             this.showNotification('카테고리 추가에 실패했습니다.', 'error');
-        } finally {
-            this.hideLoading();
-        }
-    }
-
-    async editCategory(categoryId) {
-        const category = this.categories.find(c => c.id === categoryId);
-        if (!category) return;
-
-        const formHTML = `
-            <div class="modal-overlay" id="editCategoryModal">
-                <div class="modal-content" style="max-width: 500px;">
-                    <div class="modal-header">
-                        <h2>카테고리 수정</h2>
-                        <button class="modal-close" onclick="window.backgroundsPage.hideEditCategoryModal()">×</button>
-                    </div>
-                    <form id="editCategoryForm" class="upload-form">
-                        <div class="form-group">
-                            <label class="form-label">카테고리 이름</label>
-                            <input type="text" id="editCategoryNameInput" class="form-input" value="${category.name}" required>
-                        </div>
-                        <div class="form-group">
-                            <label class="form-label">표시 이름</label>
-                            <input type="text" id="editCategoryDisplayNameInput" class="form-input" value="${category.displayName || category.name}" required>
-                        </div>
-                        <div class="form-actions">
-                            <button type="button" class="btn btn-secondary" style="flex: 1;" onclick="window.backgroundsPage.hideEditCategoryModal()">취소</button>
-                            <button type="submit" class="btn btn-primary" style="flex: 1;">수정</button>
-                        </div>
-                    </form>
-                </div>
-            </div>
-        `;
-
-        document.body.insertAdjacentHTML('beforeend', formHTML);
-
-        document.getElementById('editCategoryForm')?.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            await this.updateCategory(categoryId);
-        });
-    }
-
-    hideEditCategoryModal() {
-        document.getElementById('editCategoryModal')?.remove();
-    }
-
-    async updateCategory(categoryId) {
-        const nameInput = document.getElementById('editCategoryNameInput');
-        const displayNameInput = document.getElementById('editCategoryDisplayNameInput');
-
-        const name = nameInput?.value.trim();
-        const displayName = displayNameInput?.value.trim();
-
-        if (!name || !displayName) {
-            alert('모든 필드를 입력해주세요.');
-            return;
-        }
-
-        this.showLoading('카테고리 수정 중...');
-
-        try {
-            await backgroundCategoryService.updateCategory(categoryId, {
-                name,
-                displayName
-            });
-
-            this.hideEditCategoryModal();
-            this.hideCategoryModal();
-            this.showNotification('카테고리가 수정되었습니다!', 'success');
-            await this.loadCategories();
-        } catch (error) {
-            console.error('Update category failed:', error);
-            this.showNotification('카테고리 수정에 실패했습니다.', 'error');
         } finally {
             this.hideLoading();
         }
