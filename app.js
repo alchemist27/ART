@@ -68,23 +68,24 @@ async function loadItemsData() {
 
 async function loadBackgroundsData() {
     try {
-        // 먼저 Firebase에서 데이터 로드 시도
+        // Firebase에서 데이터 로드 시도
         if (window.loadBackgroundsFromFirebase) {
             const firebaseBackgrounds = await window.loadBackgroundsFromFirebase();
+            backgroundsData = firebaseBackgrounds;
+
             if (firebaseBackgrounds.length > 0) {
-                backgroundsData = firebaseBackgrounds;
-                console.log('Firebase에서 backgrounds 로드 완료:', backgroundsData.length, 'backgrounds');
-                return;
+                console.log('✅ Firebase에서 backgrounds 로드 완료:', backgroundsData.length, 'backgrounds');
+            } else {
+                console.warn('⚠️ Firebase backgrounds 컬렉션이 비어있습니다.');
+                console.warn('💡 CMS에서 배경 이미지를 업로드해주세요: https://art-cms-gamma.vercel.app/backgrounds');
             }
+            return;
         }
 
-        // Firebase 데이터가 없으면 로컬 JSON 파일 사용
-        const response = await fetch('/assets/backgrounds.json');
-        backgroundsData = await response.json();
-        console.log('로컬 JSON에서 backgrounds 로드:', backgroundsData.length, 'backgrounds');
+        console.error('❌ Firebase loader가 로드되지 않았습니다.');
+        backgroundsData = [];
     } catch (error) {
-        console.error('Failed to load backgrounds data:', error);
-        // Fallback to empty array
+        console.error('❌ 배경 이미지 로드 실패:', error);
         backgroundsData = [];
     }
 }
