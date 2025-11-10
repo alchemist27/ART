@@ -11,7 +11,7 @@ const checkAuthAndRoute = () => {
     if (isAuthenticated()) {
         // 로그인 상태
         if (currentPath === '/' || currentPath === '/login') {
-            router.navigate('/dashboard');
+            router.navigate('/products');
         } else {
             router.render(currentPath);
         }

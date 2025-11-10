@@ -12,11 +12,6 @@ export class Sidebar {
                 <nav class="sidebar-nav">
                     <ul class="nav-menu">
                         <li class="nav-item">
-                            <a href="/dashboard" class="nav-link ${activePage === 'dashboard' ? 'active' : ''}" data-route="/dashboard">
-                                대시보드
-                            </a>
-                        </li>
-                        <li class="nav-item">
                             <a href="/products" class="nav-link ${activePage === 'products' ? 'active' : ''}" data-route="/products">
                                 Cafe24 상품
                             </a>
