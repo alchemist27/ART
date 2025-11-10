@@ -167,7 +167,7 @@ export class ProductsPage {
         }
 
         // Cafe24 카테고리 추가 - 특정 대분류 카테고리 번호만 표시
-        const allowedCategoryNos = [24, 25, 26, 27, 28, 29, 30, 31, 32];
+        const allowedCategoryNos = [424, 381, 121, 124, 129, 128, 155, 318, 127];
 
         const topLevelCategories = this.categories.filter(category =>
             allowedCategoryNos.includes(parseInt(category.category_no))
