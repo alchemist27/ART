@@ -166,8 +166,16 @@ export class ProductsPage {
             categorySelect.appendChild(option);
         }
 
-        // Cafe24 카테고리 추가
-        this.categories.forEach(category => {
+        // Cafe24 카테고리 추가 - depth 1 (대분류)만 필터링
+        const topLevelCategories = this.categories.filter(category => category.category_depth === 1);
+
+        console.log('[ProductsPage] Rendering categories:', {
+            total: this.categories.length,
+            topLevel: topLevelCategories.length,
+            topLevelList: topLevelCategories.map(c => ({ no: c.category_no, name: c.category_name }))
+        });
+
+        topLevelCategories.forEach(category => {
             const option = document.createElement('option');
             option.value = category.category_no;
             option.textContent = category.category_name;

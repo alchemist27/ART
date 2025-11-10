@@ -3,6 +3,7 @@ let canvasManager;
 let filterManager;
 let itemsData = [];
 let backgroundsData = [];
+let backgroundCategories = [];
 
 // Initialize the application
 document.addEventListener('DOMContentLoaded', function() {
@@ -11,26 +12,28 @@ document.addEventListener('DOMContentLoaded', function() {
 
 async function initializeApp() {
     showLoading(true);
-    
+
     try {
         // Load data
         await loadItemsData();
         await loadBackgroundsData();
-        
+        await loadBackgroundCategories();
+
         // Initialize managers
         canvasManager = new CanvasManager('designCanvas');
         filterManager = new FilterManager(itemsData);
-        
+
         // Make managers globally accessible
         window.canvasManager = canvasManager;
         window.filterManager = filterManager;
-        
+
         // Initialize UI components
         initializeEventListeners();
-        
+
         // Render initial content
+        renderBackgroundCategories();
         renderBackgrounds();
-        
+
         showLoading(false);
         console.log('App initialized successfully');
     } catch (error) {
@@ -74,7 +77,7 @@ async function loadBackgroundsData() {
                 return;
             }
         }
-        
+
         // Firebase 데이터가 없으면 로컬 JSON 파일 사용
         const response = await fetch('/assets/backgrounds.json');
         backgroundsData = await response.json();
@@ -84,6 +87,44 @@ async function loadBackgroundsData() {
         // Fallback to empty array
         backgroundsData = [];
     }
+}
+
+async function loadBackgroundCategories() {
+    try {
+        // Firebase에서 카테고리 로드
+        if (window.loadBackgroundCategoriesFromFirebase) {
+            backgroundCategories = await window.loadBackgroundCategoriesFromFirebase();
+            console.log('Firebase에서 background categories 로드 완료:', backgroundCategories.length, 'categories');
+        }
+    } catch (error) {
+        console.error('Failed to load background categories:', error);
+        // Fallback to empty array
+        backgroundCategories = [];
+    }
+}
+
+function renderBackgroundCategories() {
+    const bgCatDropdown = document.getElementById('backgroundCategoryDropdown');
+    if (!bgCatDropdown) return;
+
+    // Keep the default option
+    bgCatDropdown.innerHTML = '<option value="" disabled selected>기본배경 / MD추천디자인💕</option>';
+
+    // Calculate image counts per category
+    const categoryCounts = {};
+    backgroundsData.forEach(bg => {
+        const category = bg.category || '기타';
+        categoryCounts[category] = (categoryCounts[category] || 0) + 1;
+    });
+
+    // Add categories from Firebase with counts
+    backgroundCategories.forEach(cat => {
+        const count = categoryCounts[cat.name] || 0;
+        const option = document.createElement('option');
+        option.value = cat.name;
+        option.textContent = `${cat.displayName || cat.name} (${count})`;
+        bgCatDropdown.appendChild(option);
+    });
 }
 
 // Canvas and filter initialization is now handled by managers
@@ -188,35 +229,38 @@ function initializeEventListeners() {
 
 // Item rendering is now handled by FilterManager
 
-// 임시: 배경 id별 카테고리 매핑 함수
+// 배경 카테고리 반환 함수
 function getBackgroundCategory(bg) {
-    // 실제로는 bg.category 사용, 여기선 id로 임시 분기
-    if (bg.id === 'bg1') return '키링';
-    if (bg.id === 'bg2') return '팔찌/목걸이';
-    // 필요시 더 추가
-    return '기타';
+    // Firebase에서 온 데이터는 category 필드 사용
+    return bg.category || '기타';
 }
 
 // 드롭다운 카테고리 필터링용 전역 변수
-let selectedBgCategory = 'all';
+let selectedBgCategory = '';
 
 function renderBackgrounds() {
     const backgroundGrid = document.getElementById('backgroundGrid');
-    
+
     if (!backgroundGrid) return;
-    
+
     backgroundGrid.innerHTML = '';
-    
+
     // 필터링
     let filtered = backgroundsData;
-    if (selectedBgCategory && selectedBgCategory !== 'all') {
+    if (selectedBgCategory && selectedBgCategory !== '') {
         filtered = backgroundsData.filter(bg => getBackgroundCategory(bg) === selectedBgCategory);
     }
+
+    if (filtered.length === 0) {
+        backgroundGrid.innerHTML = '<div style="padding: 20px; text-align: center; color: #999;">이 카테고리에 배경이 없습니다.</div>';
+        return;
+    }
+
     filtered.forEach((bg, index) => {
         const bgCard = createBackgroundCard(bg, false); // 기본 활성화 제거
         backgroundGrid.appendChild(bgCard);
     });
-    
+
     // 워터마크 로고 표시 (배경 선택 전까지)
     if (canvasManager) {
         canvasManager.showWatermark();
@@ -229,8 +273,8 @@ function createBackgroundCard(bg, isActive = false) {
     card.dataset.bgId = bg.id;
     
     const img = document.createElement('img');
-    // Firebase에서 온 데이터는 src 필드, 로컬은 image 필드 사용
-    img.src = bg.src || `/assets/${bg.image}`;
+    // Firebase에서 온 데이터의 src 필드 사용
+    img.src = bg.src;
     img.alt = bg.name;
     
     const name = document.createElement('div');

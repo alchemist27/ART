@@ -269,8 +269,13 @@ class CanvasManager {
     // 아이템을 캔버스에 추가
     addItem(itemData) {
         return new Promise((resolve, reject) => {
-            // Firebase에서 온 데이터는 src 필드, 로컬은 image 필드 사용
-            const imagePath = itemData.src || `/assets/${itemData.image}`;
+            // Firebase에서 온 데이터의 src 필드 사용
+            const imagePath = itemData.src;
+
+            if (!imagePath) {
+                console.error('이미지 경로가 없습니다:', itemData);
+                return reject(new Error('이미지 경로가 없습니다'));
+            }
 
             fabric.Image.fromURL(imagePath, (img) => {
                 if (!img || !img.width) {
@@ -323,9 +328,12 @@ class CanvasManager {
     // 배경 설정
     setBackground(backgroundData) {
         return new Promise((resolve, reject) => {
-            // Firebase에서 온 데이터는 src 필드, 로컬은 image 필드 사용
-            const imagePath = backgroundData.src || (backgroundData.image ? `/assets/${backgroundData.image}` : null);
-            if (!imagePath) return reject(new Error('Invalid background data'));
+            // Firebase에서 온 데이터의 src 필드 사용
+            const imagePath = backgroundData.src;
+            if (!imagePath) {
+                console.error('배경 이미지 경로가 없습니다:', backgroundData);
+                return reject(new Error('배경 이미지 경로가 없습니다'));
+            }
             
             fabric.Image.fromURL(imagePath, (img) => {
                 if (!img || !img.width) {
@@ -604,8 +612,8 @@ class CanvasManager {
         item.dataset.objectIds = objectIds;
 
         const img = document.createElement('img');
-        // Firebase에서 온 데이터는 src 필드, 로컬은 image 필드 사용
-        img.src = itemData.src || `/assets/${itemData.image}`;
+        // Firebase에서 온 데이터의 썸네일 또는 src 필드 사용
+        img.src = itemData.thumbnail || itemData.src;
         img.alt = itemData.name;
 
         const info = document.createElement('div');

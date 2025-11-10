@@ -1,26 +1,53 @@
 import { Sidebar } from '../components/Sidebar.js';
 import { backgroundService } from '../services/backgroundService.js';
+import { backgroundCategoryService } from '../services/backgroundCategoryService.js';
 
 export class BackgroundsPage {
     constructor(container) {
         this.container = container;
         this.backgrounds = [];
+        this.allBackgrounds = []; // For counting purposes
+        this.categories = [];
         this.isLoading = false;
         this.selectedCategory = 'all';
-        
+
         this.render();
+        this.loadCategories();
         this.loadBackgrounds();
+    }
+
+    async loadCategories() {
+        try {
+            this.categories = await backgroundCategoryService.getCategories();
+            console.log('Loaded categories:', this.categories);
+            this.renderCategoryDropdown();
+        } catch (error) {
+            console.error('Failed to load categories:', error);
+            this.showError('카테고리를 불러오는데 실패했습니다.');
+        }
     }
 
     async loadBackgrounds() {
         this.isLoading = true;
         this.updateLoadingState(true);
-        
+
         try {
-            this.backgrounds = await backgroundService.getBackgrounds(
-                this.selectedCategory === 'all' ? null : this.selectedCategory
-            );
+            // Always load all backgrounds for accurate counts
+            this.allBackgrounds = await backgroundService.getBackgrounds(null);
+
+            // Filter for display
+            if (this.selectedCategory === 'all') {
+                this.backgrounds = this.allBackgrounds;
+            } else {
+                this.backgrounds = this.allBackgrounds.filter(
+                    bg => bg.category === this.selectedCategory
+                );
+            }
+
             this.displayBackgrounds();
+
+            // Update category dropdown with counts after loading backgrounds
+            this.renderCategoryDropdown();
         } catch (error) {
             console.error('Failed to load backgrounds:', error);
             this.showError('배경 이미지를 불러오는데 실패했습니다.');
@@ -28,6 +55,33 @@ export class BackgroundsPage {
             this.isLoading = false;
             this.updateLoadingState(false);
         }
+    }
+
+    renderCategoryDropdown() {
+        const categoryFilter = document.getElementById('categoryFilter');
+        if (!categoryFilter) return;
+
+        // Calculate total count
+        const totalCount = this.allBackgrounds.length;
+
+        // Keep "전체 카테고리" option with count
+        categoryFilter.innerHTML = `<option value="all">전체 카테고리 (${totalCount})</option>`;
+
+        // Calculate image counts per category using all backgrounds
+        const categoryCounts = {};
+        this.allBackgrounds.forEach(bg => {
+            const category = bg.category || '기타';
+            categoryCounts[category] = (categoryCounts[category] || 0) + 1;
+        });
+
+        // Add categories from Firebase with counts
+        this.categories.forEach(cat => {
+            const count = categoryCounts[cat.name] || 0;
+            const option = document.createElement('option');
+            option.value = cat.name;
+            option.textContent = `${cat.displayName || cat.name} (${count})`;
+            categoryFilter.appendChild(option);
+        });
     }
 
     displayBackgrounds() {
@@ -166,6 +220,11 @@ export class BackgroundsPage {
     }
 
     showUploadModal() {
+        // Generate category options from Firebase
+        const categoryOptions = this.categories.map(cat =>
+            `<option value="${cat.name}">${cat.displayName || cat.name}</option>`
+        ).join('');
+
         const modalHTML = `
             <div class="modal-overlay" id="uploadModal">
                 <div class="modal-content">
@@ -178,16 +237,7 @@ export class BackgroundsPage {
                             <label class="form-label">카테고리</label>
                             <select id="categorySelect" class="form-select" required>
                                 <option value="">선택하세요</option>
-                                <option value="키링">키링</option>
-                                <option value="팔찌/목걸이">팔찌/목걸이</option>
-                                <option value="반지/귀걸이">반지/귀걸이</option>
-                                <option value="네일아트">네일아트</option>
-                                <option value="핸드폰기종">핸드폰기종</option>
-                                <option value="레진아트">레진아트</option>
-                                <option value="모루공예">모루공예</option>
-                                <option value="비녀공예">비녀공예</option>
-                                <option value="스위츠데코">스위츠데코</option>
-                                <option value="스마트톡/탑로더">스마트톡/탑로더</option>
+                                ${categoryOptions}
                             </select>
                         </div>
                         <div class="form-group">
@@ -202,7 +252,7 @@ export class BackgroundsPage {
                 </div>
             </div>
         `;
-        
+
         document.body.insertAdjacentHTML('beforeend', modalHTML);
         return document.getElementById('uploadModal');
     }
@@ -298,22 +348,19 @@ export class BackgroundsPage {
                         <div class="filter-group">
                             <select id="categoryFilter" class="filter-select">
                                 <option value="all">전체 카테고리</option>
-                                <option value="키링">키링</option>
-                                <option value="팔찌/목걸이">팔찌/목걸이</option>
-                                <option value="반지/귀걸이">반지/귀걸이</option>
-                                <option value="네일아트">네일아트</option>
-                                <option value="핸드폰기종">핸드폰기종</option>
-                                <option value="레진아트">레진아트</option>
-                                <option value="모루공예">모루공예</option>
-                                <option value="비녀공예">비녀공예</option>
-                                <option value="스위츠데코">스위츠데코</option>
-                                <option value="스마트톡/탑로더">스마트톡/탑로더</option>
+                                <!-- Categories will be loaded dynamically -->
                             </select>
                         </div>
-                        <button class="btn btn-primary" id="uploadBtn">
-                            <i class="fas fa-upload"></i>
-                            새 배경 이미지 업로드
-                        </button>
+                        <div style="display: flex; gap: 8px;">
+                            <button class="btn btn-secondary" id="manageCategoriesBtn">
+                                <i class="fas fa-cog"></i>
+                                카테고리 관리
+                            </button>
+                            <button class="btn btn-primary" id="uploadBtn">
+                                <i class="fas fa-upload"></i>
+                                새 배경 이미지 업로드
+                            </button>
+                        </div>
                     </div>
                     
                     <input type="file" id="fileInput" accept="image/*" style="display: none;">
@@ -344,6 +391,11 @@ export class BackgroundsPage {
             this.loadBackgrounds();
         });
 
+        // Manage categories button
+        document.getElementById('manageCategoriesBtn')?.addEventListener('click', () => {
+            this.showCategoryManagementModal();
+        });
+
         // Upload button
         document.getElementById('uploadBtn')?.addEventListener('click', () => {
             console.log('Upload button clicked');
@@ -359,5 +411,306 @@ export class BackgroundsPage {
                 e.target.value = ''; // Reset input
             }
         });
+    }
+
+    showCategoryManagementModal() {
+        // Calculate image counts per category
+        const categoryCounts = {};
+        this.allBackgrounds.forEach(bg => {
+            const category = bg.category || '기타';
+            categoryCounts[category] = (categoryCounts[category] || 0) + 1;
+        });
+
+        const categoriesHTML = this.categories.map((cat, index) => {
+            const count = categoryCounts[cat.name] || 0;
+            return `
+                <div class="category-item" data-category-id="${cat.id}" draggable="true">
+                    <div class="category-info">
+                        <button class="btn-icon drag-handle" title="드래그하여 순서 변경">
+                            <i class="fas fa-grip-vertical"></i>
+                        </button>
+                        <span class="category-order">${index + 1}</span>
+                        <span class="category-name">${cat.displayName || cat.name}</span>
+                        <span class="category-count">(${count}개)</span>
+                    </div>
+                    <div class="category-actions">
+                        <button class="btn-icon" onclick="window.backgroundsPage.editCategory('${cat.id}')" title="수정">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                        <button class="btn-icon btn-delete" onclick="window.backgroundsPage.deleteCategory('${cat.id}')" title="삭제">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                </div>
+            `;
+        }).join('');
+
+        const modalHTML = `
+            <div class="modal-overlay" id="categoryModal">
+                <div class="modal-content" style="max-width: 600px;">
+                    <div class="modal-header">
+                        <h2>배경 카테고리 관리</h2>
+                        <button class="modal-close" onclick="window.backgroundsPage.hideCategoryModal()">×</button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="category-list" id="categoryList">
+                            ${categoriesHTML}
+                        </div>
+                        <button class="btn btn-primary" style="width: 100%; margin-top: 16px;" onclick="window.backgroundsPage.showAddCategoryForm()">
+                            <i class="fas fa-plus"></i>
+                            새 카테고리 추가
+                        </button>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        document.body.insertAdjacentHTML('beforeend', modalHTML);
+        this.setupDragAndDrop();
+    }
+
+    setupDragAndDrop() {
+        const categoryList = document.getElementById('categoryList');
+        if (!categoryList) return;
+
+        let draggedElement = null;
+
+        categoryList.addEventListener('dragstart', (e) => {
+            if (e.target.classList.contains('category-item')) {
+                draggedElement = e.target;
+                e.target.style.opacity = '0.5';
+            }
+        });
+
+        categoryList.addEventListener('dragend', (e) => {
+            if (e.target.classList.contains('category-item')) {
+                e.target.style.opacity = '1';
+            }
+        });
+
+        categoryList.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            const afterElement = this.getDragAfterElement(categoryList, e.clientY);
+            if (afterElement == null) {
+                categoryList.appendChild(draggedElement);
+            } else {
+                categoryList.insertBefore(draggedElement, afterElement);
+            }
+        });
+
+        categoryList.addEventListener('drop', async (e) => {
+            e.preventDefault();
+            await this.saveCategoryOrder();
+        });
+    }
+
+    getDragAfterElement(container, y) {
+        const draggableElements = [...container.querySelectorAll('.category-item:not(.dragging)')];
+
+        return draggableElements.reduce((closest, child) => {
+            const box = child.getBoundingClientRect();
+            const offset = y - box.top - box.height / 2;
+
+            if (offset < 0 && offset > closest.offset) {
+                return { offset: offset, element: child };
+            } else {
+                return closest;
+            }
+        }, { offset: Number.NEGATIVE_INFINITY }).element;
+    }
+
+    async saveCategoryOrder() {
+        const categoryList = document.getElementById('categoryList');
+        if (!categoryList) return;
+
+        const categoryItems = categoryList.querySelectorAll('.category-item');
+        const categoryIds = Array.from(categoryItems).map(item => item.dataset.categoryId);
+
+        this.showLoading('카테고리 순서 저장 중...');
+
+        try {
+            await backgroundCategoryService.reorderCategories(categoryIds);
+            this.showNotification('카테고리 순서가 저장되었습니다!', 'success');
+
+            // Reload categories to update order numbers
+            await this.loadCategories();
+
+            // Update the modal
+            this.hideCategoryModal();
+            this.showCategoryManagementModal();
+        } catch (error) {
+            console.error('Save category order failed:', error);
+            this.showNotification('순서 저장에 실패했습니다.', 'error');
+        } finally {
+            this.hideLoading();
+        }
+    }
+
+    hideCategoryModal() {
+        document.getElementById('categoryModal')?.remove();
+    }
+
+    showAddCategoryForm() {
+        const formHTML = `
+            <div class="modal-overlay" id="addCategoryModal">
+                <div class="modal-content" style="max-width: 500px;">
+                    <div class="modal-header">
+                        <h2>새 카테고리 추가</h2>
+                        <button class="modal-close" onclick="window.backgroundsPage.hideAddCategoryModal()">×</button>
+                    </div>
+                    <form id="addCategoryForm" class="upload-form">
+                        <div class="form-group">
+                            <label class="form-label">카테고리 이름</label>
+                            <input type="text" id="categoryNameInput" class="form-input" placeholder="예: 키링" required>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">표시 이름 (선택사항)</label>
+                            <input type="text" id="categoryDisplayNameInput" class="form-input" placeholder="예: 키링">
+                        </div>
+                        <div class="form-actions">
+                            <button type="button" class="btn btn-secondary" style="flex: 1;" onclick="window.backgroundsPage.hideAddCategoryModal()">취소</button>
+                            <button type="submit" class="btn btn-primary" style="flex: 1;">추가</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        `;
+
+        document.body.insertAdjacentHTML('beforeend', formHTML);
+
+        document.getElementById('addCategoryForm')?.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            await this.addCategory();
+        });
+    }
+
+    hideAddCategoryModal() {
+        document.getElementById('addCategoryModal')?.remove();
+    }
+
+    async addCategory() {
+        const nameInput = document.getElementById('categoryNameInput');
+        const displayNameInput = document.getElementById('categoryDisplayNameInput');
+
+        const name = nameInput?.value.trim();
+        const displayName = displayNameInput?.value.trim() || name;
+
+        if (!name) {
+            alert('카테고리 이름을 입력해주세요.');
+            return;
+        }
+
+        this.showLoading('카테고리 추가 중...');
+
+        try {
+            await backgroundCategoryService.createCategory({
+                name,
+                displayName
+            });
+
+            this.hideAddCategoryModal();
+            this.hideCategoryModal();
+            this.showNotification('카테고리가 추가되었습니다!', 'success');
+            await this.loadCategories();
+        } catch (error) {
+            console.error('Add category failed:', error);
+            this.showNotification('카테고리 추가에 실패했습니다.', 'error');
+        } finally {
+            this.hideLoading();
+        }
+    }
+
+    async editCategory(categoryId) {
+        const category = this.categories.find(c => c.id === categoryId);
+        if (!category) return;
+
+        const formHTML = `
+            <div class="modal-overlay" id="editCategoryModal">
+                <div class="modal-content" style="max-width: 500px;">
+                    <div class="modal-header">
+                        <h2>카테고리 수정</h2>
+                        <button class="modal-close" onclick="window.backgroundsPage.hideEditCategoryModal()">×</button>
+                    </div>
+                    <form id="editCategoryForm" class="upload-form">
+                        <div class="form-group">
+                            <label class="form-label">카테고리 이름</label>
+                            <input type="text" id="editCategoryNameInput" class="form-input" value="${category.name}" required>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">표시 이름</label>
+                            <input type="text" id="editCategoryDisplayNameInput" class="form-input" value="${category.displayName || category.name}" required>
+                        </div>
+                        <div class="form-actions">
+                            <button type="button" class="btn btn-secondary" style="flex: 1;" onclick="window.backgroundsPage.hideEditCategoryModal()">취소</button>
+                            <button type="submit" class="btn btn-primary" style="flex: 1;">수정</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        `;
+
+        document.body.insertAdjacentHTML('beforeend', formHTML);
+
+        document.getElementById('editCategoryForm')?.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            await this.updateCategory(categoryId);
+        });
+    }
+
+    hideEditCategoryModal() {
+        document.getElementById('editCategoryModal')?.remove();
+    }
+
+    async updateCategory(categoryId) {
+        const nameInput = document.getElementById('editCategoryNameInput');
+        const displayNameInput = document.getElementById('editCategoryDisplayNameInput');
+
+        const name = nameInput?.value.trim();
+        const displayName = displayNameInput?.value.trim();
+
+        if (!name || !displayName) {
+            alert('모든 필드를 입력해주세요.');
+            return;
+        }
+
+        this.showLoading('카테고리 수정 중...');
+
+        try {
+            await backgroundCategoryService.updateCategory(categoryId, {
+                name,
+                displayName
+            });
+
+            this.hideEditCategoryModal();
+            this.hideCategoryModal();
+            this.showNotification('카테고리가 수정되었습니다!', 'success');
+            await this.loadCategories();
+        } catch (error) {
+            console.error('Update category failed:', error);
+            this.showNotification('카테고리 수정에 실패했습니다.', 'error');
+        } finally {
+            this.hideLoading();
+        }
+    }
+
+    async deleteCategory(categoryId) {
+        if (!confirm('이 카테고리를 삭제하시겠습니까?')) {
+            return;
+        }
+
+        this.showLoading('카테고리 삭제 중...');
+
+        try {
+            await backgroundCategoryService.deleteCategory(categoryId);
+
+            this.hideCategoryModal();
+            this.showNotification('카테고리가 삭제되었습니다!', 'success');
+            await this.loadCategories();
+        } catch (error) {
+            console.error('Delete category failed:', error);
+            this.showNotification('카테고리 삭제에 실패했습니다.', 'error');
+        } finally {
+            this.hideLoading();
+        }
     }
 }

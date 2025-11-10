@@ -613,8 +613,8 @@ class FilterManager {
         card.dataset.itemId = item.id;
 
         const img = document.createElement('img');
-        // 왼쪽 패널에는 썸네일 표시 (thumbnail 우선, 없으면 src, 없으면 로컬 image)
-        img.src = item.thumbnail || item.src || `/assets/${item.image}`;
+        // 왼쪽 패널에는 썸네일 표시 (thumbnail 우선, 없으면 src)
+        img.src = item.thumbnail || item.src;
         img.alt = item.name;
         img.draggable = false;
 
