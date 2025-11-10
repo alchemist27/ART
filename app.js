@@ -117,6 +117,24 @@ function renderBackgroundCategories() {
         categoryCounts[category] = (categoryCounts[category] || 0) + 1;
     });
 
+    // If no categories from Firebase, show categories from actual backgrounds
+    if (backgroundCategories.length === 0) {
+        console.warn('Firebase 카테고리가 없습니다. 배경 이미지의 카테고리를 사용합니다.');
+
+        // Get unique categories from backgrounds
+        const uniqueCategories = [...new Set(backgroundsData.map(bg => bg.category).filter(Boolean))];
+
+        uniqueCategories.sort().forEach(categoryName => {
+            const count = categoryCounts[categoryName] || 0;
+            const option = document.createElement('option');
+            option.value = categoryName;
+            option.textContent = `${categoryName} (${count})`;
+            bgCatDropdown.appendChild(option);
+        });
+
+        return;
+    }
+
     // Add categories from Firebase with counts
     backgroundCategories.forEach(cat => {
         const count = categoryCounts[cat.name] || 0;
@@ -271,11 +289,15 @@ function createBackgroundCard(bg, isActive = false) {
     const card = document.createElement('div');
     card.className = `background-card ${isActive ? 'active' : ''}`;
     card.dataset.bgId = bg.id;
-    
+
     const img = document.createElement('img');
     // Firebase에서 온 데이터의 src 필드 사용
+    if (!bg.src) {
+        console.error('배경 이미지 URL이 없습니다:', bg);
+        return card; // Return empty card if no image
+    }
     img.src = bg.src;
-    img.alt = bg.name;
+    img.alt = bg.name || 'Background';
     
     const name = document.createElement('div');
     name.className = 'bg-name';
