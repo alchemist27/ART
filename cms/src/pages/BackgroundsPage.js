@@ -20,10 +20,35 @@ export class BackgroundsPage {
         try {
             this.categories = await backgroundCategoryService.getCategories();
             console.log('Loaded categories:', this.categories);
+
+            // If no categories exist, show initialization message
+            if (this.categories.length === 0) {
+                console.log('No categories found, may need initialization');
+            }
+
             this.renderCategoryDropdown();
         } catch (error) {
             console.error('Failed to load categories:', error);
             this.showError('카테고리를 불러오는데 실패했습니다.');
+        }
+    }
+
+    async initializeCategories() {
+        if (!confirm('기본 카테고리를 초기화하시겠습니까?\n(기존 카테고리가 없을 때만 실행됩니다)')) {
+            return;
+        }
+
+        this.showLoading('카테고리 초기화 중...');
+
+        try {
+            await backgroundCategoryService.initializeDefaultCategories();
+            this.showNotification('기본 카테고리가 초기화되었습니다!', 'success');
+            await this.loadCategories();
+        } catch (error) {
+            console.error('Initialize categories failed:', error);
+            this.showNotification('카테고리 초기화에 실패했습니다: ' + error.message, 'error');
+        } finally {
+            this.hideLoading();
         }
     }
 
@@ -352,6 +377,10 @@ export class BackgroundsPage {
                             </select>
                         </div>
                         <div style="display: flex; gap: 8px;">
+                            <button class="btn btn-secondary" id="initCategoriesBtn" title="기본 카테고리 초기화">
+                                <i class="fas fa-database"></i>
+                                카테고리 초기화
+                            </button>
                             <button class="btn btn-secondary" id="manageCategoriesBtn">
                                 <i class="fas fa-cog"></i>
                                 카테고리 관리
@@ -389,6 +418,11 @@ export class BackgroundsPage {
         document.getElementById('categoryFilter')?.addEventListener('change', (e) => {
             this.selectedCategory = e.target.value;
             this.loadBackgrounds();
+        });
+
+        // Initialize categories button
+        document.getElementById('initCategoriesBtn')?.addEventListener('click', () => {
+            this.initializeCategories();
         });
 
         // Manage categories button
