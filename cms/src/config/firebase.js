@@ -1,5 +1,5 @@
 import { initializeApp } from 'firebase/app';
-import { getAuth } from 'firebase/auth';
+import { getAuth, signInAnonymously, onAuthStateChanged } from 'firebase/auth';
 import { getFirestore } from 'firebase/firestore';
 import { getStorage } from 'firebase/storage';
 
@@ -27,5 +27,18 @@ const app = initializeApp(firebaseConfig);
 export const auth = getAuth(app);
 export const db = getFirestore(app);
 export const storage = getStorage(app);
+
+// 익명 인증 자동 로그인
+onAuthStateChanged(auth, (user) => {
+    if (!user) {
+        signInAnonymously(auth)
+            .then(() => {
+                console.log('Signed in anonymously');
+            })
+            .catch((error) => {
+                console.error('Anonymous auth failed:', error);
+            });
+    }
+});
 
 export default app;
