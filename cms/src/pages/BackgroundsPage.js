@@ -19,13 +19,6 @@ export class BackgroundsPage {
     async loadCategories() {
         try {
             this.categories = await backgroundCategoryService.getCategories();
-            console.log('Loaded categories:', this.categories);
-
-            // If no categories exist, show initialization message
-            if (this.categories.length === 0) {
-                console.log('No categories found, may need initialization');
-            }
-
             this.renderCategoryDropdown();
         } catch (error) {
             console.error('Failed to load categories:', error);
@@ -351,23 +344,19 @@ export class BackgroundsPage {
                         <p class="page-subtitle">디자인 캔버스에서 사용할 배경 이미지를 관리합니다</p>
                     </div>
                     
-                    <div class="controls-section">
-                        <div class="filter-group">
-                            <select id="categoryFilter" class="filter-select">
-                                <option value="all">전체 카테고리</option>
-                                <!-- Categories will be loaded dynamically -->
-                            </select>
-                        </div>
-                        <div style="display: flex; gap: 8px;">
-                            <button class="btn btn-secondary" id="manageCategoriesBtn">
-                                <i class="fas fa-cog"></i>
-                                카테고리 관리
-                            </button>
-                            <button class="btn btn-primary" id="uploadBtn">
-                                <i class="fas fa-upload"></i>
-                                새 배경 이미지 업로드
-                            </button>
-                        </div>
+                    <div class="controls-section" style="display: flex; gap: 12px; align-items: center;">
+                        <select id="categoryFilter" class="filter-select" style="flex: 0 0 200px;">
+                            <option value="all">전체 카테고리</option>
+                            <!-- Categories will be loaded dynamically -->
+                        </select>
+                        <button class="btn btn-secondary" id="manageCategoriesBtn" style="flex: 0 0 auto; white-space: nowrap;">
+                            <i class="fas fa-cog"></i>
+                            카테고리 관리
+                        </button>
+                        <button class="btn btn-primary" id="uploadBtn" style="flex: 0 0 auto; white-space: nowrap;">
+                            <i class="fas fa-upload"></i>
+                            새 배경 이미지 업로드
+                        </button>
                     </div>
                     
                     <input type="file" id="fileInput" accept="image/*" style="display: none;">
