@@ -287,7 +287,7 @@ class Cafe24ApiService {
     }
 
     async getCategories() {
-        const endpoint = '/admin/categories';
+        const endpoint = '/admin/categories?limit=100';  // limit 증가
         console.log('[Cafe24 API] Requesting categories');
 
         const response = await this.makeApiRequest(endpoint);
