@@ -345,17 +345,17 @@ export class BackgroundsPage {
                     </div>
                     
                     <div class="controls-section" style="display: flex; gap: 12px; align-items: center;">
-                        <select id="categoryFilter" class="filter-select" style="flex: 0 0 200px;">
+                        <select id="categoryFilter" class="filter-select" style="width: 200px;">
                             <option value="all">전체 카테고리</option>
                             <!-- Categories will be loaded dynamically -->
                         </select>
-                        <button class="btn btn-secondary" id="manageCategoriesBtn" style="flex: 0 0 auto; white-space: nowrap;">
+                        <button class="btn btn-secondary" id="manageCategoriesBtn" style="white-space: nowrap; padding: 8px 16px;">
                             <i class="fas fa-cog"></i>
                             카테고리 관리
                         </button>
-                        <button class="btn btn-primary" id="uploadBtn" style="flex: 0 0 auto; white-space: nowrap;">
+                        <button class="btn btn-primary" id="uploadBtn" style="white-space: nowrap; padding: 8px 16px;">
                             <i class="fas fa-upload"></i>
-                            새 배경 이미지 업로드
+                            배경 업로드
                         </button>
                     </div>
                     
