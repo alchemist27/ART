@@ -1,7 +1,6 @@
 {
-  "git": {
-    "deploymentEnabled": {
-      "main": true
-    }
-  }
+  "buildCommand": "bash inject-env.sh",
+  "installCommand": "echo 'No install needed'",
+  "framework": null,
+  "outputDirectory": "."
 }
