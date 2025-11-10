@@ -287,26 +287,41 @@ class Cafe24ApiService {
     }
 
     async getCategories() {
-        const endpoint = '/admin/categories?limit=100';  // limit 증가
-        console.log('[Cafe24 API] Requesting categories');
+        console.log('[Cafe24 API] Requesting specific categories');
 
-        const response = await this.makeApiRequest(endpoint);
+        // 지정된 카테고리 번호들만 조회
+        const categoryNos = [424, 381, 121, 124, 129, 128, 155, 318, 127];
+        const categories = [];
+
+        // 각 카테고리 번호별로 개별 조회
+        for (const categoryNo of categoryNos) {
+            try {
+                const endpoint = `/admin/categories/${categoryNo}`;
+                const response = await this.makeApiRequest(endpoint);
+
+                if (response.category) {
+                    categories.push(response.category);
+                }
+            } catch (error) {
+                console.warn(`[Cafe24 API] Failed to fetch category ${categoryNo}:`, error.message);
+            }
+        }
 
         console.log('[Cafe24 API] Categories response:', {
-            totalCount: response.categories ? response.categories.length : 0,
-            hasCategories: !!response.categories,
-            responseKeys: Object.keys(response)
+            totalCount: categories.length,
+            hasCategories: categories.length > 0,
+            categoryNos: categoryNos
         });
 
-        if (response.categories && response.categories.length > 0) {
-            console.log('[Cafe24 API] Categories list:', response.categories.map(c => ({
+        if (categories.length > 0) {
+            console.log('[Cafe24 API] Categories list:', categories.map(c => ({
                 no: c.category_no,
                 name: c.category_name,
                 depth: c.category_depth
             })));
         }
 
-        return response.categories || [];
+        return categories;
     }
 
     async getCategory(categoryNo) {

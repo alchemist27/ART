@@ -166,21 +166,13 @@ export class ProductsPage {
             categorySelect.appendChild(option);
         }
 
-        // Cafe24 카테고리 추가 - 특정 대분류 카테고리 번호만 표시
-        const allowedCategoryNos = [424, 381, 121, 124, 129, 128, 155, 318, 127];
-
-        const topLevelCategories = this.categories.filter(category =>
-            allowedCategoryNos.includes(parseInt(category.category_no))
-        );
-
+        // Cafe24 카테고리 추가 (API에서 이미 필터링된 카테고리만 가져옴)
         console.log('[ProductsPage] Rendering categories:', {
             total: this.categories.length,
-            topLevel: topLevelCategories.length,
-            allowedNos: allowedCategoryNos,
-            topLevelList: topLevelCategories.map(c => ({ no: c.category_no, name: c.category_name }))
+            categoryList: this.categories.map(c => ({ no: c.category_no, name: c.category_name }))
         });
 
-        topLevelCategories.forEach(category => {
+        this.categories.forEach(category => {
             const option = document.createElement('option');
             option.value = category.category_no;
             option.textContent = category.category_name;
