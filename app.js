@@ -68,38 +68,23 @@ async function loadItemsData() {
 
 async function loadBackgroundsData() {
     try {
-        // Firebase에서 데이터 로드 시도
         if (window.loadBackgroundsFromFirebase) {
-            const firebaseBackgrounds = await window.loadBackgroundsFromFirebase();
-            backgroundsData = firebaseBackgrounds;
-
-            if (firebaseBackgrounds.length > 0) {
-                console.log('✅ Firebase에서 backgrounds 로드 완료:', backgroundsData.length, 'backgrounds');
-            } else {
-                console.warn('⚠️ Firebase backgrounds 컬렉션이 비어있습니다.');
-                console.warn('💡 CMS에서 배경 이미지를 업로드해주세요: https://art-cms-gamma.vercel.app/backgrounds');
-            }
+            backgroundsData = await window.loadBackgroundsFromFirebase();
             return;
         }
-
-        console.error('❌ Firebase loader가 로드되지 않았습니다.');
         backgroundsData = [];
     } catch (error) {
-        console.error('❌ 배경 이미지 로드 실패:', error);
+        console.error('배경 이미지 로드 실패:', error);
         backgroundsData = [];
     }
 }
 
 async function loadBackgroundCategories() {
     try {
-        // Firebase에서 카테고리 로드
         if (window.loadBackgroundCategoriesFromFirebase) {
             backgroundCategories = await window.loadBackgroundCategoriesFromFirebase();
-            console.log('Firebase에서 background categories 로드 완료:', backgroundCategories.length, 'categories');
         }
     } catch (error) {
-        console.error('Failed to load background categories:', error);
-        // Fallback to empty array
         backgroundCategories = [];
     }
 }
@@ -120,8 +105,6 @@ function renderBackgroundCategories() {
 
     // If no categories from Firebase, show categories from actual backgrounds
     if (backgroundCategories.length === 0) {
-        console.warn('Firebase 카테고리가 없습니다. 배경 이미지의 카테고리를 사용합니다.');
-
         // Get unique categories from backgrounds
         const uniqueCategories = [...new Set(backgroundsData.map(bg => bg.category).filter(Boolean))];
 

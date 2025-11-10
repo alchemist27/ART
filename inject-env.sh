@@ -1,18 +1,6 @@
 #!/bin/bash
 # Inject environment variables into env-config.js
 
-echo "🔧 Injecting environment variables..."
-echo "📁 Working directory: $(pwd)"
-echo "📄 env-config.js exists: $([ -f env-config.js ] && echo 'yes' || echo 'no')"
-
-# Check if environment variables are set
-echo "🔑 Checking environment variables:"
-echo "  VITE_FIREBASE_API_KEY: ${VITE_FIREBASE_API_KEY:0:10}..."
-echo "  VITE_FIREBASE_PROJECT_ID: ${VITE_FIREBASE_PROJECT_ID}"
-
-# Create backup
-cp env-config.js env-config.js.backup
-
 # Use sed with backup flag for cross-platform compatibility
 if [[ "$OSTYPE" == "darwin"* ]]; then
     # macOS
@@ -33,7 +21,3 @@ else
     sed -i "s|__FIREBASE_APP_ID__|${VITE_FIREBASE_APP_ID}|g" env-config.js
     sed -i "s|__CAFE24_SHOP_ID__|${CAFE24_SHOP_ID}|g" env-config.js
 fi
-
-echo "✅ Environment variables injected successfully"
-echo "📄 First few lines of env-config.js:"
-head -n 5 env-config.js
