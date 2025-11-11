@@ -61,10 +61,11 @@ export class ProductsPage {
                 // URL에서 OAuth 파라미터 제거
                 const cleanUrl = window.location.pathname;
                 window.history.replaceState({}, '', cleanUrl);
-                
-                console.log('Token exchange successful, loading products...');
-                // 토큰 교환 성공 후 상품 로드
-                await this.loadProducts();
+
+                console.log('Token exchange successful, loading categories...');
+                // 토큰 교환 성공 후 카테고리 목록 로드
+                await this.loadCategories();
+                this.showInitialMessage();
             } catch (error) {
                 console.error('Token exchange failed:', error);
                 this.showError(`토큰 교환에 실패했습니다: ${error.message}`);
