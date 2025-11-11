@@ -294,13 +294,19 @@ class Cafe24ApiService {
         const categories = [];
 
         // 각 카테고리 번호별로 개별 조회
-        for (const categoryNo of categoryNos) {
+        for (let i = 0; i < categoryNos.length; i++) {
+            const categoryNo = categoryNos[i];
             try {
                 const endpoint = `/admin/categories/${categoryNo}`;
                 const response = await this.makeApiRequest(endpoint);
 
                 if (response.category) {
                     categories.push(response.category);
+                }
+
+                // API 제한 방지를 위한 짧은 지연 (마지막 항목이 아닐 때만)
+                if (i < categoryNos.length - 1) {
+                    await new Promise(resolve => setTimeout(resolve, 100));
                 }
             } catch (error) {
                 console.warn(`[Cafe24 API] Failed to fetch category ${categoryNo}:`, error.message);
@@ -455,42 +461,71 @@ class Cafe24ApiService {
         return response.products || [];
     }
 
-    async getProductsByCategory(categoryNo) {
-        console.log('[Cafe24 API] Fetching products for category:', categoryNo);
+    async getProductsByCategory(categoryNo, additionalParams = {}) {
+        console.log('[Cafe24 API] Fetching products for category:', categoryNo, 'with params:', additionalParams);
 
-        // 1. 카테고리에 속한 상품 번호 목록 조회
-        const categoryProducts = await this.getCategoryProducts(categoryNo);
+        // /admin/products API에 category 파라미터를 사용하여 한 번에 조회
+        // 100개씩 페이지네이션으로 조회
+        let allProducts = [];
+        let offset = 0;
+        const limit = 100; // Cafe24 API 최대 limit
 
-        console.log('[Cafe24 API] Category products count:', categoryProducts.length);
-        console.log('[Cafe24 API] Category product numbers:', categoryProducts.map(p => p.product_no));
+        while (true) {
+            const queryParams = new URLSearchParams({
+                category: categoryNo,
+                display: 'T',
+                selling: 'T',
+                limit: limit,
+                offset: offset
+            });
 
-        if (categoryProducts.length === 0) {
-            console.log('[Cafe24 API] No products found in category:', categoryNo);
-            return [];
+            // 추가 검색 파라미터 (상품명, 상품코드 등)
+            if (additionalParams.product_name) {
+                queryParams.append('product_name', additionalParams.product_name);
+            }
+            if (additionalParams.product_code) {
+                queryParams.append('product_code', additionalParams.product_code);
+            }
+            if (additionalParams.product_no) {
+                queryParams.append('product_no', additionalParams.product_no);
+            }
+
+            const endpoint = `/admin/products?${queryParams.toString()}`;
+            console.log(`[Cafe24 API] Fetching products (offset: ${offset}, limit: ${limit})`);
+
+            try {
+                const response = await this.makeApiRequest(endpoint);
+                const products = response.products || [];
+
+                console.log(`[Cafe24 API] Retrieved ${products.length} products`);
+
+                if (products.length === 0) {
+                    // 더 이상 제품이 없으면 종료
+                    break;
+                }
+
+                allProducts = allProducts.concat(products);
+
+                // 100개 미만이면 마지막 페이지
+                if (products.length < limit) {
+                    break;
+                }
+
+                // 다음 페이지로
+                offset += limit;
+
+                // API 제한 방지를 위한 짧은 지연
+                await new Promise(resolve => setTimeout(resolve, 500));
+
+            } catch (err) {
+                console.error(`[Cafe24 API] Failed to fetch products at offset ${offset}:`, err);
+                break;
+            }
         }
 
-        // 2. 각 상품의 상세 정보를 병렬로 조회
-        console.log('[Cafe24 API] Fetching detailed info for', categoryProducts.length, 'products...');
-        const productDetailsPromises = categoryProducts.map(item =>
-            this.getProduct(item.product_no).catch(err => {
-                console.error(`[Cafe24 API] Failed to fetch product ${item.product_no}:`, err);
-                return null;
-            })
-        );
+        console.log('[Cafe24 API] Successfully loaded', allProducts.length, 'products for category', categoryNo);
 
-        const productDetails = await Promise.all(productDetailsPromises);
-
-        // null 제거 (조회 실패한 상품)
-        const validProducts = productDetails.filter(p => p !== null);
-        const failedCount = productDetails.length - validProducts.length;
-
-        if (failedCount > 0) {
-            console.warn(`[Cafe24 API] ${failedCount} products failed to load`);
-        }
-
-        console.log('[Cafe24 API] Successfully loaded', validProducts.length, 'products');
-
-        return validProducts;
+        return allProducts;
     }
 }
 

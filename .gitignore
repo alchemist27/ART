@@ -39,6 +39,7 @@ yarn-error.log*
 # Documentation (internal only - not for public deployment)
 PROJECT_STRUCTURE.md
 SECURITY_INCIDENT_RESPONSE.md
+FIREBASE_SECURITY_SETUP.md
 prd.txt
 **/SETUP*.md
 **/DEPLOYMENT*.md

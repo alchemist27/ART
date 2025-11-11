@@ -199,7 +199,17 @@ export class ProductsPage {
             // 카테고리가 선택되어 있으면 카테고리별 상품 조회
             if (this.searchCategory) {
                 console.log('[ProductsPage] Loading products by category:', this.searchCategory);
-                products = await cafe24Api.getProductsByCategory(this.searchCategory);
+
+                // 추가 검색 조건 (상품명, 상품코드)
+                const additionalParams = {};
+                if (this.searchKeyword) {
+                    additionalParams.product_name = this.searchKeyword;
+                }
+                if (this.searchProductCode) {
+                    additionalParams.product_code = this.searchProductCode;
+                }
+
+                products = await cafe24Api.getProductsByCategory(this.searchCategory, additionalParams);
             } else {
                 // 일반 상품 조회
                 const offset = (this.currentPage - 1) * this.itemsPerPage;
