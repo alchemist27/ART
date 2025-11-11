@@ -821,10 +821,16 @@ export class ProductsPage {
 
         if (!saveBtn || !productRow) return;
 
-        // Find product info from this.products array
-        const product = this.products.find(p => p.product_no === productNo);
-        const productName = product ? product.product_name : '';
-        const productCode = product ? product.product_code : '';
+        // Get product name and code from DOM (more reliable than this.products array)
+        const productNameElement = productRow.querySelector('.product-name .name-text');
+        const productCodeElement = productRow.querySelector('.product-code');
+
+        const productName = productNameElement ? productNameElement.textContent.trim() : '';
+        const productCode = productCodeElement ? productCodeElement.textContent.trim().replace('-', '') : '';
+
+        console.log('[saveProductMetadata] Product No:', productNo);
+        console.log('[saveProductMetadata] Product Name from DOM:', productName);
+        console.log('[saveProductMetadata] Product Code from DOM:', productCode);
 
         // Get all input values
         const category1 = productRow.querySelector('.category1').value;
