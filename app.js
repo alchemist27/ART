@@ -1,6 +1,7 @@
 // Global variables
 let canvasManager;
 let filterManager;
+let guideModalManager;
 let itemsData = [];
 let backgroundsData = [];
 let backgroundCategories = [];
@@ -22,10 +23,12 @@ async function initializeApp() {
         // Initialize managers
         canvasManager = new CanvasManager('designCanvas');
         filterManager = new FilterManager(itemsData);
+        guideModalManager = new GuideModalManager();
 
         // Make managers globally accessible
         window.canvasManager = canvasManager;
         window.filterManager = filterManager;
+        window.guideModalManager = guideModalManager;
 
         // Initialize UI components
         initializeEventListeners();

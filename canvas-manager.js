@@ -909,4 +909,60 @@ class CanvasManager {
             );
         }, { crossOrigin: 'anonymous' });
     }
+}
+
+/**
+ * Guide Modal Manager - 이용 가이드 모달 관리
+ */
+class GuideModalManager {
+    constructor() {
+        this.modal = document.getElementById('guideModal');
+        this.openBtn = document.getElementById('guideBtn');
+        this.closeBtn = document.getElementById('guideModalClose');
+        this.init();
+    }
+
+    init() {
+        // 이용가이드 버튼 클릭 이벤트
+        if (this.openBtn) {
+            this.openBtn.addEventListener('click', () => this.open());
+        }
+
+        // 닫기 버튼 클릭 이벤트
+        if (this.closeBtn) {
+            this.closeBtn.addEventListener('click', () => this.close());
+        }
+
+        // 오버레이 클릭 시 닫기
+        if (this.modal) {
+            this.modal.addEventListener('click', (e) => {
+                if (e.target === this.modal) {
+                    this.close();
+                }
+            });
+        }
+
+        // ESC 키로 닫기
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && this.modal.classList.contains('active')) {
+                this.close();
+            }
+        });
+    }
+
+    open() {
+        if (this.modal) {
+            this.modal.classList.add('active');
+            // 모달이 열릴 때 body 스크롤 방지
+            document.body.style.overflow = 'hidden';
+        }
+    }
+
+    close() {
+        if (this.modal) {
+            this.modal.classList.remove('active');
+            // 모달이 닫힐 때 body 스크롤 복원
+            document.body.style.overflow = '';
+        }
+    }
 } 
