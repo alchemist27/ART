@@ -159,6 +159,11 @@ class CanvasManager {
                 const canvas = target.canvas;
 
                 target.clone(cloned => {
+                    // itemData 깊은 복사 (참조 문제 방지)
+                    if (cloned.itemData) {
+                        cloned.itemData = JSON.parse(JSON.stringify(cloned.itemData));
+                    }
+
                     cloned.set({
                         left: target.left + 20,
                         top: target.top + 20,
@@ -421,8 +426,26 @@ class CanvasManager {
     }
 
     deleteSelected() {
-        this.canvas.getActiveObjects().forEach(obj => this.canvas.remove(obj));
-        this.canvas.discardActiveObject().renderAll();
+        const objects = this.canvas.getActiveObjects();
+
+        if (objects.length === 0) return;
+
+        // 다중 선택 삭제 시 성능 최적화
+        if (objects.length > 1) {
+            this.isLoadingState = true;
+
+            objects.forEach(obj => this.canvas.remove(obj));
+            this.canvas.discardActiveObject().renderAll();
+
+            // 이벤트 재개 후 한 번만 업데이트
+            this.isLoadingState = false;
+            this.saveState();
+            this.updateUI();
+        } else {
+            // 단일 객체는 일반 삭제 (이벤트 자동 트리거)
+            this.canvas.remove(objects[0]);
+            this.canvas.discardActiveObject().renderAll();
+        }
     }
     
     handleKeyDown(e) {
@@ -671,11 +694,28 @@ class CanvasManager {
                 } else if (newQuantity < currentQuantity) {
                     // 수량 감소: 객체 제거
                     const diff = currentQuantity - newQuantity;
-                    for (let i = 0; i < diff; i++) {
-                        const lastObj = groupObjects[groupObjects.length - 1 - i];
+
+                    // 다중 삭제 시 성능 최적화
+                    if (diff > 1) {
+                        this.isLoadingState = true;
+
+                        for (let i = 0; i < diff; i++) {
+                            const lastObj = groupObjects[groupObjects.length - 1 - i];
+                            this.canvas.remove(lastObj);
+                        }
+
+                        this.canvas.renderAll();
+
+                        // 이벤트 재개 후 한 번만 업데이트
+                        this.isLoadingState = false;
+                        this.saveState();
+                        this.updateUI();
+                    } else {
+                        // 단일 삭제는 일반 처리
+                        const lastObj = groupObjects[groupObjects.length - 1];
                         this.canvas.remove(lastObj);
+                        this.canvas.renderAll();
                     }
-                    this.canvas.renderAll();
                 }
             } else {
                 e.target.value = 1;
@@ -702,11 +742,26 @@ class CanvasManager {
         deleteBtn.title = '모두 삭제';
         deleteBtn.onclick = (e) => {
             e.stopPropagation();
-            // 그룹의 모든 객체 삭제
-            groupObjects.forEach(obj => {
-                this.canvas.remove(obj);
-            });
-            this.canvas.renderAll();
+
+            // 다중 삭제 시 성능 최적화: 이벤트 일시 정지
+            if (groupObjects.length > 1) {
+                this.isLoadingState = true;
+
+                groupObjects.forEach(obj => {
+                    this.canvas.remove(obj);
+                });
+
+                this.canvas.renderAll();
+
+                // 이벤트 재개 후 한 번만 업데이트
+                this.isLoadingState = false;
+                this.saveState();
+                this.updateUI();
+            } else {
+                // 단일 객체는 일반 삭제 (이벤트 자동 트리거)
+                this.canvas.remove(groupObjects[0]);
+                this.canvas.renderAll();
+            }
         };
 
         actions.appendChild(quantityControl);
@@ -759,6 +814,11 @@ class CanvasManager {
         const activeObject = this.canvas.getActiveObject();
         if (activeObject) {
             activeObject.clone(cloned => {
+                // itemData 깊은 복사 (참조 문제 방지)
+                if (cloned.itemData) {
+                    cloned.itemData = JSON.parse(JSON.stringify(cloned.itemData));
+                }
+
                 cloned.set({
                     left: activeObject.left + 20,
                     top: activeObject.top + 20,
@@ -769,15 +829,25 @@ class CanvasManager {
     }
 
     clear() {
+        // 작업 내용이 있는 경우에만 확인 대화상자 표시
+        const hasContent = this.canvas.getObjects().filter(obj => obj.itemData).length > 0 || this.currentBackground;
+
+        if (hasContent) {
+            const confirmed = confirm('모든 작업 내용이 삭제됩니다.\n정말 초기화하시겠습니까?');
+            if (!confirmed) {
+                return; // 사용자가 취소한 경우 함수 종료
+            }
+        }
+
         this.canvas.clear();
         this.currentBackground = null;
-        
+
         const overlay = document.getElementById('canvasOverlay');
         if (overlay) {
             overlay.classList.remove('hidden');
             overlay.style.display = 'flex';
         }
-        
+
         this.saveState();
     }
 

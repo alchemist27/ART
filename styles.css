@@ -864,7 +864,7 @@ body::before {
 .canvas-unified-controls {
     display: flex;
     align-items: center;
-    gap: var(--spacing-sm);
+    gap: var(--spacing-lg);
     padding: var(--spacing-sm) var(--spacing-lg);
     background: linear-gradient(135deg, rgba(255, 255, 255, 0.6), rgba(255, 255, 255, 0.4));
     backdrop-filter: blur(10px);
@@ -872,6 +872,12 @@ body::before {
     box-shadow: var(--shadow-soft);
     border: 2px solid rgba(255, 107, 156, 0.367);
     flex-shrink: 0;
+}
+
+.control-group {
+    display: flex;
+    align-items: center;
+    gap: 4px;
 }
 
 .control-btn-unified {
@@ -906,13 +912,6 @@ body::before {
     line-height: 1;
 }
 
-.control-btn-unified.palette-icon {
-    padding: var(--spacing-xs);
-}
-
-.control-btn-unified.palette-icon span {
-    display: none;
-}
 
 .control-btn-unified:hover {
     background: linear-gradient(135deg, rgba(255, 107, 157, 0.1) 0%, rgba(255, 107, 157, 0.05) 100%);
@@ -928,7 +927,7 @@ body::before {
 .control-btn-unified.guide-btn-highlight {
     background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-hover) 100%);
     color: white;
-    padding: var(--spacing-xs) var(--spacing-md);
+    padding: var(--spacing-md) var(--spacing-md);
     box-shadow: var(--shadow-pink);
     font-weight: 600;
 }
