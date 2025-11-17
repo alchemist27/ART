@@ -864,7 +864,7 @@ body::before {
 .canvas-unified-controls {
     display: flex;
     align-items: center;
-    gap: var(--spacing-lg);
+    gap: var(--spacing-md);
     padding: var(--spacing-sm) var(--spacing-lg);
     background: linear-gradient(135deg, rgba(255, 255, 255, 0.6), rgba(255, 255, 255, 0.4));
     backdrop-filter: blur(10px);
@@ -877,7 +877,7 @@ body::before {
 .control-group {
     display: flex;
     align-items: center;
-    gap: 4px;
+    gap: 2px;
 }
 
 .control-btn-unified {
