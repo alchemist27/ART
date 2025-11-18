@@ -26,6 +26,10 @@
     <main class="main-container">
         <!-- Left Panel - Tools & Items -->
         <aside class="left-panel">
+            <!-- Toggle Button for Left Panel -->
+            <button class="panel-toggle left-toggle" id="leftToggle" title="왼쪽 패널 접기/펼치기">
+                <i class="fas fa-chevron-left"></i>
+            </button>
             <!-- Search & Filter Section -->
             <section class="search-section">
                 <div class="search-controls">
@@ -269,7 +273,7 @@
             <!-- Items Grid -->
             <section class="items-section">
                 <div class="items-header">
-                    <h3><i class="fas fa-th-large"></i> 제품 목록</h3>
+                    <h3>제품 목록</h3>
                     <div class="sort-tabs" id="sortTabs">
                         <button class="sort-tab active" data-sort="popular">
                             <i class="fas fa-fire"></i>
@@ -388,15 +392,15 @@
                 <div class="guide-content">
                     <div class="guide-item">
                         <span class="guide-icon red-circle">×</span>
-                        <span><strong>개별 삭제 버튼<br></strong>선택한 제품 삭제</span>
+                        <span><strong>개별 삭제<br></strong>선택한 제품 삭제</span>
                     </div>
                     <div class="guide-item">
                         <i class="fas fa-times-circle"></i>
-                        <span><strong>동시 삭제 버튼<br></strong>Shift키 누른 상태로 선택한 제품 한번에 삭제</span>
+                        <span><strong>동시 삭제<br></strong>Shift키 누른 상태로 선택한 제품 모두 삭제</span>
                     </div>
                     <div class="guide-item">
                         <span class="guide-icon green-circle">+</span>
-                        <span><strong>복제 버튼<br></strong>선택한 제품 복사하기</span>
+                        <span><strong>복제<br></strong>선택한 제품 복사</span>
                     </div>
                     <div class="guide-item">
                         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6366f1" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -405,7 +409,7 @@
                             <path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16"/>
                             <path d="M16 16h5v5"/>
                         </svg>
-                        <span><strong>회전 버튼<br></strong>드래그하여 자유롭게 회전</span>
+                        <span><strong>회전<br></strong>드래그하여 자유롭게 회전</span>
                     </div>
                 </div>
             </div>
@@ -413,6 +417,10 @@
 
         <!-- Right Panel - Background & Options -->
         <aside class="right-panel">
+            <!-- Toggle Button for Right Panel -->
+            <button class="panel-toggle right-toggle" id="rightToggle" title="오른쪽 패널 접기/펼치기">
+                <i class="fas fa-chevron-right"></i>
+            </button>
             <!-- Background Selection -->
             <section class="background-section">
                 <div class="section-header">
@@ -455,8 +463,6 @@
                         <p>제품 수량을 조절해주세요.</p>
                     </div>
                     <div class="empty-state">
-                        <i class="fas fa-heart"></i>
-                        <p>예쁜 아이템을 선택해주세요</p>
                     </div>
                 </div>
                 <div class="cart-action">

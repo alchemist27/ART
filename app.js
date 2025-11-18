@@ -32,6 +32,7 @@ async function initializeApp() {
 
         // Initialize UI components
         initializeEventListeners();
+        initializePanelToggles();
 
         // Render initial content
         renderBackgroundCategories();
@@ -636,6 +637,55 @@ function showLoading(show) {
         } else {
             loadingOverlay.classList.remove('show');
         }
+    }
+}
+
+// Panel toggle functionality
+function initializePanelToggles() {
+    const leftPanel = document.querySelector('.left-panel');
+    const rightPanel = document.querySelector('.right-panel');
+    const leftToggle = document.getElementById('leftToggle');
+    const rightToggle = document.getElementById('rightToggle');
+    const mainContainer = document.querySelector('.main-container');
+
+    if (leftToggle) {
+        leftToggle.addEventListener('click', () => {
+            leftPanel.classList.toggle('collapsed');
+
+            // Update main container grid
+            if (leftPanel.classList.contains('collapsed') && rightPanel.classList.contains('collapsed')) {
+                mainContainer.classList.add('both-collapsed');
+                mainContainer.classList.remove('left-collapsed', 'right-collapsed');
+            } else if (leftPanel.classList.contains('collapsed')) {
+                mainContainer.classList.add('left-collapsed');
+                mainContainer.classList.remove('both-collapsed', 'right-collapsed');
+            } else if (rightPanel.classList.contains('collapsed')) {
+                mainContainer.classList.add('right-collapsed');
+                mainContainer.classList.remove('both-collapsed', 'left-collapsed');
+            } else {
+                mainContainer.classList.remove('both-collapsed', 'left-collapsed', 'right-collapsed');
+            }
+        });
+    }
+
+    if (rightToggle) {
+        rightToggle.addEventListener('click', () => {
+            rightPanel.classList.toggle('collapsed');
+
+            // Update main container grid
+            if (leftPanel.classList.contains('collapsed') && rightPanel.classList.contains('collapsed')) {
+                mainContainer.classList.add('both-collapsed');
+                mainContainer.classList.remove('left-collapsed', 'right-collapsed');
+            } else if (leftPanel.classList.contains('collapsed')) {
+                mainContainer.classList.add('left-collapsed');
+                mainContainer.classList.remove('both-collapsed', 'right-collapsed');
+            } else if (rightPanel.classList.contains('collapsed')) {
+                mainContainer.classList.add('right-collapsed');
+                mainContainer.classList.remove('both-collapsed', 'left-collapsed');
+            } else {
+                mainContainer.classList.remove('both-collapsed', 'left-collapsed', 'right-collapsed');
+            }
+        });
     }
 }
 
