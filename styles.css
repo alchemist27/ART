@@ -249,11 +249,11 @@ body::before {
 
 /* Panel Toggle Button Styles */
 .panel-toggle {
-    position: absolute;
+    position: fixed;
     top: 50%;
     transform: translateY(-50%);
-    width: 32px;
-    height: 80px;
+    width: 28px;
+    height: 50px;
     background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-hover) 100%);
     border: 2px solid rgba(255, 107, 157, 0.3);
     border-radius: var(--radius-md);
@@ -262,14 +262,14 @@ body::before {
     display: flex;
     align-items: center;
     justify-content: center;
-    z-index: 1000;
+    z-index: 10001;
     transition: all var(--transition-fast);
     box-shadow: var(--shadow-pink);
 }
 
 .panel-toggle:hover {
     background: linear-gradient(135deg, var(--primary-hover) 0%, #ff4757 100%);
-    transform: translateY(-50%) scale(1.05);
+    transform: translateY(-50%) scale(1.08);
     box-shadow: var(--shadow-lg);
 }
 
@@ -278,19 +278,21 @@ body::before {
 }
 
 .left-toggle {
-    right: -16px;
+    left: calc(320px + var(--spacing-md));
     border-top-left-radius: 0;
     border-bottom-left-radius: 0;
+    transition: left var(--transition-normal);
 }
 
 .right-toggle {
-    left: -16px;
+    right: calc(340px + var(--spacing-md));
     border-top-right-radius: 0;
     border-bottom-right-radius: 0;
+    transition: right var(--transition-normal);
 }
 
 .panel-toggle i {
-    font-size: 1rem;
+    font-size: 0.9rem;
     transition: transform var(--transition-fast);
 }
 
@@ -313,19 +315,19 @@ body::before {
     border: none;
 }
 
-.left-panel.collapsed .left-toggle {
-    right: -48px;
+.main-container.left-collapsed .left-toggle {
+    left: var(--spacing-md);
 }
 
-.right-panel.collapsed .right-toggle {
-    left: -48px;
+.main-container.right-collapsed .right-toggle {
+    right: var(--spacing-md);
 }
 
-.left-panel.collapsed .left-toggle i {
+.main-container.left-collapsed .left-toggle i {
     transform: rotate(180deg);
 }
 
-.right-panel.collapsed .right-toggle i {
+.main-container.right-collapsed .right-toggle i {
     transform: rotate(180deg);
 }
 
@@ -1023,7 +1025,7 @@ body::before {
 .control-btn-unified.guide-btn-highlight {
     background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-hover) 100%);
     color: white;
-    padding: var(--spacing-md) var(--spacing-md);
+    padding: var(--spacing-sm) var(--spacing-md);
     box-shadow: var(--shadow-pink);
     font-weight: 600;
 }
@@ -1914,6 +1916,7 @@ body::before {
 /* Canvas Button Guide */
 .canvas-button-guide {
     margin: 3px 0;
+    padding: 5px 0;
     background: linear-gradient(135deg, rgba(255, 255, 255, 0.6) 0%, rgba(250, 250, 250, 0.5) 100%);
     border: 1px solid rgba(0, 0, 0, 0.246);
     border-radius: var(--radius-lg);
