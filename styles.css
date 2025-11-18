@@ -249,7 +249,7 @@ body::before {
 
 /* Panel Toggle Button Styles */
 .panel-toggle {
-    position: fixed;
+    position: absolute;
     top: 50%;
     transform: translateY(-50%);
     width: 28px;
@@ -278,17 +278,15 @@ body::before {
 }
 
 .left-toggle {
-    left: calc(320px + var(--spacing-md));
+    right: -14px;
     border-top-left-radius: 0;
     border-bottom-left-radius: 0;
-    transition: left var(--transition-normal);
 }
 
 .right-toggle {
-    right: calc(340px + var(--spacing-md));
+    left: -14px;
     border-top-right-radius: 0;
     border-bottom-right-radius: 0;
-    transition: right var(--transition-normal);
 }
 
 .panel-toggle i {
@@ -315,19 +313,32 @@ body::before {
     border: none;
 }
 
-.main-container.left-collapsed .left-toggle {
+/* When collapsed, keep toggle visible at screen edge */
+.left-panel.collapsed {
+    position: relative;
+}
+
+.right-panel.collapsed {
+    position: relative;
+}
+
+.left-panel.collapsed .left-toggle {
+    position: fixed;
     left: var(--spacing-md);
+    right: auto;
 }
 
-.main-container.right-collapsed .right-toggle {
+.right-panel.collapsed .right-toggle {
+    position: fixed;
     right: var(--spacing-md);
+    left: auto;
 }
 
-.main-container.left-collapsed .left-toggle i {
+.left-panel.collapsed .left-toggle i {
     transform: rotate(180deg);
 }
 
-.main-container.right-collapsed .right-toggle i {
+.right-panel.collapsed .right-toggle i {
     transform: rotate(180deg);
 }
 
