@@ -229,6 +229,7 @@ body::before {
     height: calc(100vh - 80px);
     overflow: hidden;
     min-height: 600px;
+    position: relative;
 }
 
 /* Panel Styles */
@@ -252,25 +253,28 @@ body::before {
     position: absolute;
     top: 50%;
     transform: translateY(-50%);
-    width: 28px;
-    height: 50px;
-    background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-hover) 100%);
+    width: 40px;
+    height: 40px;
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.95) 0%, rgba(255, 255, 255, 0.9) 100%);
+    backdrop-filter: blur(10px);
     border: 2px solid rgba(255, 107, 157, 0.3);
-    border-radius: var(--radius-md);
-    color: white;
+    border-radius: 50%;
+    color: var(--primary-color);
     cursor: pointer;
     display: flex;
     align-items: center;
     justify-content: center;
     z-index: 10001;
     transition: all var(--transition-fast);
-    box-shadow: var(--shadow-pink);
+    box-shadow: 0 4px 12px rgba(255, 107, 157, 0.2), 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 .panel-toggle:hover {
-    background: linear-gradient(135deg, var(--primary-hover) 0%, #ff4757 100%);
-    transform: translateY(-50%) scale(1.08);
-    box-shadow: var(--shadow-lg);
+    background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-hover) 100%);
+    color: white;
+    transform: translateY(-50%) scale(1.15);
+    box-shadow: 0 6px 20px rgba(255, 107, 157, 0.4), 0 4px 8px rgba(0, 0, 0, 0.15);
+    border-color: var(--primary-color);
 }
 
 .panel-toggle:active {
@@ -278,20 +282,19 @@ body::before {
 }
 
 .left-toggle {
-    right: -14px;
-    border-top-left-radius: 0;
-    border-bottom-left-radius: 0;
+    left: calc(320px + var(--spacing-md) - 20px);
+    transition: left var(--transition-normal), transform var(--transition-fast), background var(--transition-fast), color var(--transition-fast);
 }
 
 .right-toggle {
-    left: -14px;
-    border-top-right-radius: 0;
-    border-bottom-right-radius: 0;
+    right: calc(340px + var(--spacing-md) - 20px);
+    transition: right var(--transition-normal), transform var(--transition-fast), background var(--transition-fast), color var(--transition-fast);
 }
 
 .panel-toggle i {
-    font-size: 0.9rem;
+    font-size: 1rem;
     transition: transform var(--transition-fast);
+    font-weight: 600;
 }
 
 /* Collapsed Panel States */
@@ -313,32 +316,20 @@ body::before {
     border: none;
 }
 
-/* When collapsed, keep toggle visible at screen edge */
-.left-panel.collapsed {
-    position: relative;
-}
-
-.right-panel.collapsed {
-    position: relative;
-}
-
-.left-panel.collapsed .left-toggle {
-    position: fixed;
+/* When collapsed, move toggle to screen edge */
+.main-container.left-collapsed .left-toggle {
     left: var(--spacing-md);
-    right: auto;
 }
 
-.right-panel.collapsed .right-toggle {
-    position: fixed;
+.main-container.right-collapsed .right-toggle {
     right: var(--spacing-md);
-    left: auto;
 }
 
-.left-panel.collapsed .left-toggle i {
+.main-container.left-collapsed .left-toggle i {
     transform: rotate(180deg);
 }
 
-.right-panel.collapsed .right-toggle i {
+.main-container.right-collapsed .right-toggle i {
     transform: rotate(180deg);
 }
 
