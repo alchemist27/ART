@@ -283,12 +283,12 @@ body::before {
 
 .left-toggle {
     left: calc(320px + var(--spacing-md) - 20px);
-    transition: transform var(--transition-fast), background var(--transition-fast), color var(--transition-fast), box-shadow var(--transition-fast), border-color var(--transition-fast);
+    transition: left var(--transition-normal), transform var(--transition-fast), background var(--transition-fast), color var(--transition-fast), box-shadow var(--transition-fast), border-color var(--transition-fast);
 }
 
 .right-toggle {
     right: calc(340px + var(--spacing-md) - 20px);
-    transition: transform var(--transition-fast), background var(--transition-fast), color var(--transition-fast), box-shadow var(--transition-fast), border-color var(--transition-fast);
+    transition: right var(--transition-normal), transform var(--transition-fast), background var(--transition-fast), color var(--transition-fast), box-shadow var(--transition-fast), border-color var(--transition-fast);
 }
 
 .panel-toggle i {
@@ -316,15 +316,15 @@ body::before {
     border: none;
 }
 
-/* When collapsed, move toggle to screen edge - instant transition */
+/* When collapsed, move toggle to screen edge */
 .main-container.left-collapsed .left-toggle {
     left: var(--spacing-md);
-    transition: transform var(--transition-fast), background var(--transition-fast), color var(--transition-fast), box-shadow var(--transition-fast), border-color var(--transition-fast);
+    transition: left var(--transition-normal), transform var(--transition-fast), background var(--transition-fast), color var(--transition-fast), box-shadow var(--transition-fast), border-color var(--transition-fast);
 }
 
 .main-container.right-collapsed .right-toggle {
     right: var(--spacing-md);
-    transition: transform var(--transition-fast), background var(--transition-fast), color var(--transition-fast), box-shadow var(--transition-fast), border-color var(--transition-fast);
+    transition: right var(--transition-normal), transform var(--transition-fast), background var(--transition-fast), color var(--transition-fast), box-shadow var(--transition-fast), border-color var(--transition-fast);
 }
 
 .main-container.left-collapsed .left-toggle i {
