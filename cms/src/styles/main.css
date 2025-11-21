@@ -1874,7 +1874,6 @@ body {
 /* Image Upload Container Styles */
 .image-upload-container {
     display: flex;
-    flex-direction: column;
     gap: 6px;
     width: 100%;
     height: 100%;

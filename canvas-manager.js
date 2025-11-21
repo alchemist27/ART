@@ -659,7 +659,7 @@ class CanvasManager {
             const currentQuantity = this.purchaseList.get(itemKey).quantity;
             if (currentQuantity > 1) {
                 this.purchaseList.get(itemKey).quantity = currentQuantity - 1;
-                this.updateSelectedItems(true); // 강제 업데이트
+                quantityInput.value = currentQuantity - 1; // 값만 업데이트
             }
         };
 
@@ -675,9 +675,10 @@ class CanvasManager {
 
             if (newQuantity >= 1) {
                 this.purchaseList.get(itemKey).quantity = newQuantity;
-                this.updateSelectedItems(true); // 강제 업데이트
+                // 값만 업데이트되므로 DOM 재생성 불필요
             } else {
                 e.target.value = 1;
+                this.purchaseList.get(itemKey).quantity = 1;
             }
         };
 
@@ -689,7 +690,7 @@ class CanvasManager {
             e.stopPropagation();
             const currentQuantity = this.purchaseList.get(itemKey).quantity;
             this.purchaseList.get(itemKey).quantity = currentQuantity + 1;
-            this.updateSelectedItems(true); // 강제 업데이트
+            quantityInput.value = currentQuantity + 1; // 값만 업데이트
         };
 
         quantityControl.appendChild(decreaseBtn);
