@@ -439,7 +439,7 @@ export class ProductsPage {
                     </select>
                 </td>
                 <td class="product-input">
-                    <input type="number" class="input-text size-in-mm" data-product-no="${product.product_no}" value="${metadata.sizeInMM || ''}" placeholder="가로길이(mm)" min="1" step="0.1">
+                    <input type="number" class="input-text size-in-mm" data-product-no="${product.product_no}" value="${metadata.sizeInMM || ''}" placeholder="가로길이" min="1" step="0.1">
                 </td>
                 <td class="product-input">
                     <input type="text" class="input-text display-info" data-product-no="${product.product_no}" value="${metadata.displayInfo || ''}" placeholder="표시할 정보 입력">
@@ -850,6 +850,12 @@ export class ProductsPage {
                     <button type="button" class="remove-image-btn" data-type="thumbnail" data-product-no="${productNo}" title="삭제">×</button>
                 </div>
             `;
+
+            // Update button text to '변경'
+            const uploadLabel = document.querySelector(`label[for="thumbnail-${productNo}"]`);
+            if (uploadLabel) {
+                uploadLabel.innerHTML = '<i class="fas fa-plus"></i> 변경';
+            }
         };
         reader.readAsDataURL(file);
     }
@@ -888,6 +894,12 @@ export class ProductsPage {
 
         if (fileInput) {
             fileInput.value = '';
+        }
+
+        // Update button text back to '추가'
+        const uploadLabel = document.querySelector(`label[for="thumbnail-${productNo}"]`);
+        if (uploadLabel) {
+            uploadLabel.innerHTML = '<i class="fas fa-plus"></i> 추가';
         }
 
         // Mark for deletion in metadata
@@ -1015,8 +1027,8 @@ export class ProductsPage {
                 sizeInMM: sizeInMM ? parseFloat(sizeInMM) : null,
                 displayInfo,
                 direction: beadDirection,
-                colors: productColors,
-                keywords: productKeywords,
+                colors: productColors ? productColors.split(',').map(c => c.trim()).filter(c => c) : [],
+                keywords: productKeywords ? productKeywords.split(',').map(k => k.trim()).filter(k => k) : [],
                 updatedAt: new Date().toISOString()
             };
 

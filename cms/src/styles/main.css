@@ -1875,21 +1875,29 @@ body {
 .image-upload-container {
     display: flex;
     flex-direction: column;
-    gap: 8px;
+    gap: 6px;
     width: 100%;
+    justify-content: center;
+    align-items: flex-start;
+}
+
+.product-input .image-upload-container {
+    padding: 0;
+    margin: 0;
 }
 
 .image-preview-grid {
     display: flex;
     flex-wrap: wrap;
-    gap: 8px;
-    min-height: 60px;
+    gap: 6px;
+    min-height: 45px;
+    padding: 4px;
 }
 
 .image-preview-item {
     position: relative;
-    width: 60px;
-    height: 60px;
+    width: 45px;
+    height: 45px;
     border-radius: 6px;
     overflow: hidden;
     border: 2px solid var(--border-color);
@@ -1910,15 +1918,15 @@ body {
 
 .remove-image-btn {
     position: absolute;
-    top: -6px;
-    right: -6px;
-    width: 20px;
-    height: 20px;
+    top: -5px;
+    right: -5px;
+    width: 18px;
+    height: 18px;
     border-radius: 50%;
     border: none;
     background: var(--danger);
     color: white;
-    font-size: 16px;
+    font-size: 14px;
     line-height: 1;
     cursor: pointer;
     display: flex;

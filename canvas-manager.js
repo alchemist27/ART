@@ -162,7 +162,13 @@ class CanvasManager {
                 target.clone(cloned => {
                     // itemData 깊은 복사 (참조 문제 방지)
                     if (cloned.itemData) {
-                        cloned.itemData = JSON.parse(JSON.stringify(cloned.itemData));
+                        try {
+                            cloned.itemData = JSON.parse(JSON.stringify(cloned.itemData));
+                            console.log('복제 성공 - itemKey:', this.getItemKey(cloned.itemData));
+                        } catch (error) {
+                            console.error('itemData 복사 실패:', error);
+                            // 복사 실패 시 원본 유지 (참조 공유)
+                        }
                     }
 
                     cloned.set({
@@ -172,7 +178,7 @@ class CanvasManager {
                     canvas.add(cloned);
                     canvas.setActiveObject(cloned);
                     canvas.requestRenderAll();
-                });
+                }, ['itemData']);
 
                 return true;
             },
@@ -690,11 +696,30 @@ class CanvasManager {
         deleteBtn.onclick = (e) => {
             e.stopPropagation();
 
-            // 캔버스에서 해당 아이템 타입의 모든 객체 찾아서 삭제
-            const objectsToRemove = this.canvas.getObjects().filter(obj => {
-                if (!obj.itemData) return false;
-                return this.getItemKey(obj.itemData) === itemKey;
+            console.log('=== 삭제 버튼 클릭 ===');
+            console.log('삭제 대상 itemKey:', itemKey);
+
+            // 캔버스의 모든 객체 확인
+            const allObjects = this.canvas.getObjects();
+            console.log('캔버스 전체 객체 수:', allObjects.length);
+
+            // 각 객체의 키 출력
+            allObjects.forEach((obj, index) => {
+                if (obj.itemData) {
+                    const objKey = this.getItemKey(obj.itemData);
+                    console.log(`객체 [${index}] 키:`, objKey, '매칭:', objKey === itemKey);
+                }
             });
+
+            // 캔버스에서 해당 아이템 타입의 모든 객체 찾아서 삭제
+            const objectsToRemove = [];
+            this.canvas.forEachObject((obj) => {
+                if (obj.itemData && this.getItemKey(obj.itemData) === itemKey) {
+                    objectsToRemove.push(obj);
+                }
+            });
+
+            console.log('삭제할 객체 수:', objectsToRemove.length);
 
             if (objectsToRemove.length > 1) {
                 // 다중 삭제 시 성능 최적화
