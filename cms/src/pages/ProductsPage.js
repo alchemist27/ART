@@ -16,6 +16,10 @@ export class ProductsPage {
         this.searchProductCode = '';
         this.searchProductNo = '';
 
+        // 각 상품별 누적 파일 저장 (productNo -> File[])
+        this.pendingThumbnailFiles = new Map();
+        this.pendingImageFiles = new Map();
+
         this.render();
         this.checkAuthAndLoadProducts();
     }
@@ -842,6 +846,9 @@ export class ProductsPage {
         const previewContainer = document.getElementById(`thumbnail-preview-${productNo}`);
         if (!previewContainer) return;
 
+        // 파일 저장
+        this.pendingThumbnailFiles.set(productNo, file);
+
         const reader = new FileReader();
         reader.onload = (e) => {
             previewContainer.innerHTML = `
@@ -864,8 +871,18 @@ export class ProductsPage {
         const previewContainer = document.getElementById(`image-preview-${productNo}`);
         if (!previewContainer) return;
 
+        // 기존 누적된 파일 가져오기
+        const existingFiles = this.pendingImageFiles.get(productNo) || [];
+
+        // 새로운 파일 추가
+        const newFiles = Array.from(files);
+        const allFiles = [...existingFiles, ...newFiles];
+
+        // 누적 파일 저장
+        this.pendingImageFiles.set(productNo, allFiles);
+
         // Add new file previews
-        Array.from(files).forEach((file) => {
+        newFiles.forEach((file, idx) => {
             const reader = new FileReader();
             reader.onload = (e) => {
                 // Get current count for proper indexing
@@ -873,9 +890,9 @@ export class ProductsPage {
                 const newIndex = currentItems.length;
 
                 const previewHTML = `
-                    <div class="image-preview-item new-upload" data-type="image" data-product-no="${productNo}" data-index="${newIndex}">
+                    <div class="image-preview-item new-upload" data-type="image" data-product-no="${productNo}" data-index="${newIndex}" data-file-index="${existingFiles.length + idx}">
                         <img src="${e.target.result}" alt="이미지 ${newIndex + 1}">
-                        <button type="button" class="remove-image-btn" data-type="image" data-product-no="${productNo}" data-index="${newIndex}" title="삭제">×</button>
+                        <button type="button" class="remove-image-btn" data-type="image" data-product-no="${productNo}" data-index="${newIndex}" data-file-index="${existingFiles.length + idx}" title="삭제">×</button>
                     </div>
                 `;
                 previewContainer.insertAdjacentHTML('beforeend', previewHTML);
@@ -896,6 +913,9 @@ export class ProductsPage {
             fileInput.value = '';
         }
 
+        // 누적 파일 삭제
+        this.pendingThumbnailFiles.delete(productNo);
+
         // Update button text back to '추가'
         const uploadLabel = document.querySelector(`label[for="thumbnail-${productNo}"]`);
         if (uploadLabel) {
@@ -913,6 +933,15 @@ export class ProductsPage {
         const previewItem = document.querySelector(`#image-preview-${productNo} .image-preview-item[data-index="${index}"]`);
 
         if (previewItem) {
+            const fileIndex = parseInt(previewItem.dataset.fileIndex);
+
+            // 누적 파일 배열에서 제거
+            if (!isNaN(fileIndex)) {
+                const files = this.pendingImageFiles.get(productNo) || [];
+                files.splice(fileIndex, 1);
+                this.pendingImageFiles.set(productNo, files);
+            }
+
             previewItem.remove();
         }
 
@@ -922,7 +951,10 @@ export class ProductsPage {
             const items = previewContainer.querySelectorAll('.image-preview-item');
             items.forEach((item, idx) => {
                 item.dataset.index = idx;
-                item.querySelector('.remove-image-btn').dataset.index = idx;
+                const removeBtn = item.querySelector('.remove-image-btn');
+                if (removeBtn) {
+                    removeBtn.dataset.index = idx;
+                }
             });
         }
 
@@ -962,8 +994,10 @@ export class ProductsPage {
         const beadDirection = productRow.querySelector(`input[name="direction-${productNo}"]:checked`)?.value || '';
         const productColors = productRow.querySelector('.product-colors').value;
         const productKeywords = productRow.querySelector('.product-keywords').value;
-        const thumbnailFile = productRow.querySelector('.product-thumbnail').files[0];
-        const imageFiles = productRow.querySelector('.product-image').files;
+
+        // 누적된 파일 사용
+        const thumbnailFile = this.pendingThumbnailFiles.get(productNo);
+        const imageFiles = this.pendingImageFiles.get(productNo) || [];
 
         // Check deletion flags
         const thumbnailDeleted = productRow.dataset.thumbnailDeleted === 'true';
@@ -1051,6 +1085,10 @@ export class ProductsPage {
             const imageInput = document.getElementById(`image-${productNo}`);
             if (thumbnailInput) thumbnailInput.value = '';
             if (imageInput) imageInput.value = '';
+
+            // Clear pending files
+            this.pendingThumbnailFiles.delete(productNo);
+            this.pendingImageFiles.delete(productNo);
 
             // Clear deletion flags
             delete productRow.dataset.thumbnailDeleted;
