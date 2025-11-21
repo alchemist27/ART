@@ -1877,8 +1877,9 @@ body {
     flex-direction: column;
     gap: 6px;
     width: 100%;
+    height: 100%;
     justify-content: center;
-    align-items: flex-start;
+    align-items: center;
 }
 
 .product-input .image-upload-container {
@@ -1892,6 +1893,34 @@ body {
     gap: 6px;
     min-height: 45px;
     padding: 4px;
+}
+
+/* 썸네일 미리보기 - 기본 크기 유지 */
+[id^="thumbnail-preview-"] .image-preview-item {
+    position: relative;
+    width: 45px;
+    height: 45px;
+    border-radius: 6px;
+    overflow: hidden;
+    border: 2px solid var(--border-color);
+    background: var(--background);
+    transition: all 0.2s ease;
+}
+
+/* 다중 이미지 미리보기 - 더 작게, 1줄에 2개 */
+[id^="image-preview-"] {
+    max-width: 80px;
+}
+
+[id^="image-preview-"] .image-preview-item {
+    position: relative;
+    width: 32px;
+    height: 32px;
+    border-radius: 4px;
+    overflow: hidden;
+    border: 2px solid var(--border-color);
+    background: var(--background);
+    transition: all 0.2s ease;
 }
 
 .image-preview-item {
@@ -1936,6 +1965,15 @@ body {
     transition: all 0.2s ease;
     padding: 0;
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+/* 다중 이미지의 삭제 버튼 - 더 작게 */
+[id^="image-preview-"] .remove-image-btn {
+    width: 16px;
+    height: 16px;
+    font-size: 12px;
+    top: -4px;
+    right: -4px;
 }
 
 .image-preview-item:hover .remove-image-btn {

@@ -17,6 +17,7 @@ class CanvasManager {
         this.maxZoom = 2; // 최대 줌 (200%)
         this.zoomStep = 0.1; // 줌 단계 (10%)
         this.purchaseList = new Map(); // 구매 예정 아이템 목록 (아이템 키 -> {itemData, quantity})
+        this.lastPurchaseListSize = 0; // 마지막 구매 목록 크기 (리렌더링 최적화용)
 
         this.init();
     }
@@ -162,13 +163,7 @@ class CanvasManager {
                 target.clone(cloned => {
                     // itemData 깊은 복사 (참조 문제 방지)
                     if (cloned.itemData) {
-                        try {
-                            cloned.itemData = JSON.parse(JSON.stringify(cloned.itemData));
-                            console.log('복제 성공 - itemKey:', this.getItemKey(cloned.itemData));
-                        } catch (error) {
-                            console.error('itemData 복사 실패:', error);
-                            // 복사 실패 시 원본 유지 (참조 공유)
-                        }
+                        cloned.itemData = JSON.parse(JSON.stringify(cloned.itemData));
                     }
 
                     cloned.set({
@@ -529,10 +524,22 @@ class CanvasManager {
         document.querySelectorAll('.layer-btn').forEach(btn => btn.disabled = !activeObject);
     }
     
-    updateSelectedItems() {
+    updateSelectedItems(forceUpdate = false) {
         const selectedItemsContainer = document.getElementById('selectedItems');
 
         if (!selectedItemsContainer) return;
+
+        // 구매 목록이 변경되지 않았으면 스킵 (성능 최적화)
+        if (!forceUpdate && this.purchaseList.size === this.lastPurchaseListSize && this.purchaseList.size > 0) {
+            // 하이라이트만 업데이트
+            const activeObject = this.canvas.getActiveObject();
+            if (activeObject && activeObject.itemData) {
+                this.highlightSelectedItemInList(activeObject);
+            }
+            return;
+        }
+
+        this.lastPurchaseListSize = this.purchaseList.size;
 
         if (this.purchaseList.size === 0) {
             selectedItemsContainer.innerHTML = `
@@ -652,7 +659,7 @@ class CanvasManager {
             const currentQuantity = this.purchaseList.get(itemKey).quantity;
             if (currentQuantity > 1) {
                 this.purchaseList.get(itemKey).quantity = currentQuantity - 1;
-                this.updateUI();
+                this.updateSelectedItems(true); // 강제 업데이트
             }
         };
 
@@ -668,7 +675,7 @@ class CanvasManager {
 
             if (newQuantity >= 1) {
                 this.purchaseList.get(itemKey).quantity = newQuantity;
-                this.updateUI();
+                this.updateSelectedItems(true); // 강제 업데이트
             } else {
                 e.target.value = 1;
             }
@@ -682,7 +689,7 @@ class CanvasManager {
             e.stopPropagation();
             const currentQuantity = this.purchaseList.get(itemKey).quantity;
             this.purchaseList.get(itemKey).quantity = currentQuantity + 1;
-            this.updateUI();
+            this.updateSelectedItems(true); // 강제 업데이트
         };
 
         quantityControl.appendChild(decreaseBtn);
@@ -696,21 +703,6 @@ class CanvasManager {
         deleteBtn.onclick = (e) => {
             e.stopPropagation();
 
-            console.log('=== 삭제 버튼 클릭 ===');
-            console.log('삭제 대상 itemKey:', itemKey);
-
-            // 캔버스의 모든 객체 확인
-            const allObjects = this.canvas.getObjects();
-            console.log('캔버스 전체 객체 수:', allObjects.length);
-
-            // 각 객체의 키 출력
-            allObjects.forEach((obj, index) => {
-                if (obj.itemData) {
-                    const objKey = this.getItemKey(obj.itemData);
-                    console.log(`객체 [${index}] 키:`, objKey, '매칭:', objKey === itemKey);
-                }
-            });
-
             // 캔버스에서 해당 아이템 타입의 모든 객체 찾아서 삭제
             const objectsToRemove = [];
             this.canvas.forEachObject((obj) => {
@@ -718,8 +710,6 @@ class CanvasManager {
                     objectsToRemove.push(obj);
                 }
             });
-
-            console.log('삭제할 객체 수:', objectsToRemove.length);
 
             if (objectsToRemove.length > 1) {
                 // 다중 삭제 시 성능 최적화
