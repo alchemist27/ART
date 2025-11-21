@@ -625,18 +625,11 @@ class FilterManager {
         card.appendChild(img);
         card.appendChild(name);
 
-        // 여러 이미지가 있으면 선택 팝업 표시
-        if (item.images && item.images.length > 1) {
-            card.addEventListener('click', (e) => {
-                this.showImageSelectPopup(card, item);
-            });
-        } else {
-            // 이미지가 1개이거나 없으면 바로 캔버스에 추가
-            card.addEventListener('click', () => {
-                this.addItemToCanvas(item);
-                this.addClickEffect(card);
-            });
-        }
+        // 모든 이미지를 자동으로 캔버스에 추가 (오프셋 적용)
+        card.addEventListener('click', () => {
+            this.addItemToCanvas(item);
+            this.addClickEffect(card);
+        });
 
         return card;
     }

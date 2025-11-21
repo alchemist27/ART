@@ -439,7 +439,7 @@ export class ProductsPage {
                     </select>
                 </td>
                 <td class="product-input">
-                    <input type="number" class="input-text size-in-mm" data-product-no="${product.product_no}" value="${metadata.sizeInMM || ''}" placeholder="가로 길이(mm)" min="1" step="0.1">
+                    <input type="number" class="input-text size-in-mm" data-product-no="${product.product_no}" value="${metadata.sizeInMM || ''}" placeholder="가로길이(mm)" min="1" step="0.1">
                 </td>
                 <td class="product-input">
                     <input type="text" class="input-text display-info" data-product-no="${product.product_no}" value="${metadata.displayInfo || ''}" placeholder="표시할 정보 입력">
@@ -514,21 +514,35 @@ export class ProductsPage {
                     </div>
                 </td>
                 <td class="product-input">
-                    <div class="file-upload-wrapper">
+                    <div class="image-upload-container">
                         <input type="file" id="thumbnail-${product.product_no}" class="input-file product-thumbnail" data-product-no="${product.product_no}" accept="image/*" style="display:none;">
-                        <label for="thumbnail-${product.product_no}" class="file-upload-btn">
-                            <i class="fas fa-upload"></i> ${metadata.thumbnailFileName ? '재업로드' : '업로드'}
+                        <div class="image-preview-grid" id="thumbnail-preview-${product.product_no}">
+                            ${metadata.thumbnailUrl ? `
+                                <div class="image-preview-item" data-type="thumbnail" data-product-no="${product.product_no}">
+                                    <img src="${metadata.thumbnailUrl}" alt="썸네일">
+                                    <button type="button" class="remove-image-btn" data-type="thumbnail" data-product-no="${product.product_no}" title="삭제">×</button>
+                                </div>
+                            ` : ''}
+                        </div>
+                        <label for="thumbnail-${product.product_no}" class="file-upload-btn small">
+                            <i class="fas fa-plus"></i> ${metadata.thumbnailUrl ? '변경' : '추가'}
                         </label>
-                        <span class="file-name" id="thumbnail-filename-${product.product_no}">${metadata.thumbnailFileName || ''}</span>
                     </div>
                 </td>
                 <td class="product-input">
-                    <div class="file-upload-wrapper">
+                    <div class="image-upload-container">
                         <input type="file" id="image-${product.product_no}" class="input-file product-image" data-product-no="${product.product_no}" accept="image/*" multiple style="display:none;">
-                        <label for="image-${product.product_no}" class="file-upload-btn">
-                            <i class="fas fa-upload"></i> ${metadata.images && metadata.images.length > 0 ? '재업로드' : '업로드'}
+                        <div class="image-preview-grid" id="image-preview-${product.product_no}">
+                            ${metadata.images && metadata.images.length > 0 ? metadata.images.map((img, idx) => `
+                                <div class="image-preview-item" data-type="image" data-product-no="${product.product_no}" data-index="${idx}">
+                                    <img src="${img.url}" alt="이미지 ${idx + 1}">
+                                    <button type="button" class="remove-image-btn" data-type="image" data-product-no="${product.product_no}" data-index="${idx}" title="삭제">×</button>
+                                </div>
+                            `).join('') : ''}
+                        </div>
+                        <label for="image-${product.product_no}" class="file-upload-btn small">
+                            <i class="fas fa-plus"></i> 추가
                         </label>
-                        <span class="file-name" id="filename-${product.product_no}">${metadata.images && metadata.images.length > 0 ? `${metadata.images.length}개 파일` : ''}</span>
                     </div>
                 </td>
                 <td class="product-action">
@@ -547,7 +561,7 @@ export class ProductsPage {
                             <th width="12%">상품명</th>
                             <th width="8%">카테1</th>
                             <th width="8%">카테2</th>
-                            <th width="6%">사이즈</th>
+                            <th width="6%">사이즈(mm)</th>
                             <th width="10%">표시정보</th>
                             <th width="7%">방향</th>
                             <th width="10%">색상</th>
@@ -693,10 +707,7 @@ export class ProductsPage {
                 const productNo = e.target.dataset.productNo;
                 const file = e.target.files[0];
                 if (file) {
-                    const filenameSpan = document.getElementById(`thumbnail-filename-${productNo}`);
-                    if (filenameSpan) {
-                        filenameSpan.textContent = file.name;
-                    }
+                    this.displayThumbnailPreview(productNo, file);
                 }
             });
         });
@@ -707,12 +718,24 @@ export class ProductsPage {
                 const productNo = e.target.dataset.productNo;
                 const files = e.target.files;
                 if (files && files.length > 0) {
-                    const filenameSpan = document.getElementById(`filename-${productNo}`);
-                    if (filenameSpan) {
-                        filenameSpan.textContent = `${files.length}개 파일`;
-                    }
+                    this.displayImagePreviews(productNo, files);
                 }
             });
+        });
+
+        // Image remove button handlers
+        document.addEventListener('click', (e) => {
+            if (e.target.classList.contains('remove-image-btn')) {
+                const productNo = e.target.dataset.productNo;
+                const type = e.target.dataset.type;
+                const index = e.target.dataset.index;
+
+                if (type === 'thumbnail') {
+                    this.removeThumbnail(productNo);
+                } else if (type === 'image') {
+                    this.removeImage(productNo, parseInt(index));
+                }
+            }
         });
 
         // Save button handlers
@@ -801,17 +824,104 @@ export class ProductsPage {
     removeKeyword(productNo, keyword) {
         const hiddenInput = document.querySelector(`.product-keywords[data-product-no="${productNo}"]`);
         const keywordTag = document.querySelector(`#keyword-tags-${productNo} .keyword-tag[data-keyword="${keyword}"]`);
-        
+
         if (!hiddenInput) return;
-        
+
         // Remove from hidden input
         const currentKeywords = hiddenInput.value ? hiddenInput.value.split(',').map(k => k.trim()) : [];
         const newKeywords = currentKeywords.filter(k => k !== keyword);
         hiddenInput.value = newKeywords.join(',');
-        
+
         // Remove visual tag
         if (keywordTag) {
             keywordTag.remove();
+        }
+    }
+
+    displayThumbnailPreview(productNo, file) {
+        const previewContainer = document.getElementById(`thumbnail-preview-${productNo}`);
+        if (!previewContainer) return;
+
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            previewContainer.innerHTML = `
+                <div class="image-preview-item" data-type="thumbnail" data-product-no="${productNo}">
+                    <img src="${e.target.result}" alt="썸네일">
+                    <button type="button" class="remove-image-btn" data-type="thumbnail" data-product-no="${productNo}" title="삭제">×</button>
+                </div>
+            `;
+        };
+        reader.readAsDataURL(file);
+    }
+
+    displayImagePreviews(productNo, files) {
+        const previewContainer = document.getElementById(`image-preview-${productNo}`);
+        if (!previewContainer) return;
+
+        // Add new file previews
+        Array.from(files).forEach((file) => {
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                // Get current count for proper indexing
+                const currentItems = previewContainer.querySelectorAll('.image-preview-item');
+                const newIndex = currentItems.length;
+
+                const previewHTML = `
+                    <div class="image-preview-item new-upload" data-type="image" data-product-no="${productNo}" data-index="${newIndex}">
+                        <img src="${e.target.result}" alt="이미지 ${newIndex + 1}">
+                        <button type="button" class="remove-image-btn" data-type="image" data-product-no="${productNo}" data-index="${newIndex}" title="삭제">×</button>
+                    </div>
+                `;
+                previewContainer.insertAdjacentHTML('beforeend', previewHTML);
+            };
+            reader.readAsDataURL(file);
+        });
+    }
+
+    removeThumbnail(productNo) {
+        const previewContainer = document.getElementById(`thumbnail-preview-${productNo}`);
+        const fileInput = document.getElementById(`thumbnail-${productNo}`);
+
+        if (previewContainer) {
+            previewContainer.innerHTML = '';
+        }
+
+        if (fileInput) {
+            fileInput.value = '';
+        }
+
+        // Mark for deletion in metadata
+        const productRow = document.querySelector(`.product-row[data-product-id="${productNo}"]`);
+        if (productRow) {
+            productRow.dataset.thumbnailDeleted = 'true';
+        }
+    }
+
+    removeImage(productNo, index) {
+        const previewItem = document.querySelector(`#image-preview-${productNo} .image-preview-item[data-index="${index}"]`);
+
+        if (previewItem) {
+            previewItem.remove();
+        }
+
+        // Re-index remaining items
+        const previewContainer = document.getElementById(`image-preview-${productNo}`);
+        if (previewContainer) {
+            const items = previewContainer.querySelectorAll('.image-preview-item');
+            items.forEach((item, idx) => {
+                item.dataset.index = idx;
+                item.querySelector('.remove-image-btn').dataset.index = idx;
+            });
+        }
+
+        // Mark for deletion in metadata
+        const productRow = document.querySelector(`.product-row[data-product-id="${productNo}"]`);
+        if (productRow) {
+            if (!productRow.dataset.imagesDeleted) {
+                productRow.dataset.imagesDeleted = index.toString();
+            } else {
+                productRow.dataset.imagesDeleted += `,${index}`;
+            }
         }
     }
 
@@ -843,6 +953,14 @@ export class ProductsPage {
         const thumbnailFile = productRow.querySelector('.product-thumbnail').files[0];
         const imageFiles = productRow.querySelector('.product-image').files;
 
+        // Check deletion flags
+        const thumbnailDeleted = productRow.dataset.thumbnailDeleted === 'true';
+
+        // Get existing metadata
+        const productNumbers = [productNo];
+        const existingMetadata = await productMetadataService.loadMetadataForProducts(productNumbers);
+        const currentMetadata = existingMetadata[productNo] || {};
+
         // Show loading state
         saveBtn.classList.add('saving');
         saveBtn.disabled = true;
@@ -851,14 +969,40 @@ export class ProductsPage {
             let thumbnailInfo = null;
             let imagesInfo = [];
 
-            // Upload thumbnail if selected
-            if (thumbnailFile) {
+            // Handle thumbnail
+            if (thumbnailDeleted) {
+                // Thumbnail was deleted, don't include it
+                thumbnailInfo = null;
+            } else if (thumbnailFile) {
+                // New thumbnail uploaded
                 thumbnailInfo = await this.uploadProductThumbnail(productNo, thumbnailFile);
+            } else if (currentMetadata.thumbnailUrl) {
+                // Keep existing thumbnail
+                thumbnailInfo = {
+                    url: currentMetadata.thumbnailUrl,
+                    path: currentMetadata.thumbnailPath,
+                    fileName: currentMetadata.thumbnailFileName
+                };
             }
 
-            // Upload multiple images if selected
+            // Handle images - collect existing images that weren't deleted
+            const imagePreviewContainer = document.getElementById(`image-preview-${productNo}`);
+            if (imagePreviewContainer) {
+                const existingPreviews = imagePreviewContainer.querySelectorAll('.image-preview-item:not(.new-upload)');
+
+                // Keep existing images
+                existingPreviews.forEach((preview) => {
+                    const index = parseInt(preview.dataset.index);
+                    if (currentMetadata.images && currentMetadata.images[index]) {
+                        imagesInfo.push(currentMetadata.images[index]);
+                    }
+                });
+            }
+
+            // Upload new images if selected
             if (imageFiles && imageFiles.length > 0) {
-                imagesInfo = await this.uploadProductImages(productNo, imageFiles);
+                const newImagesInfo = await this.uploadProductImages(productNo, imageFiles);
+                imagesInfo = [...imagesInfo, ...newImagesInfo];
             }
 
             // Save metadata to Firebase
@@ -889,6 +1033,16 @@ export class ProductsPage {
             }
 
             await this.saveToFirebase(productNo, metadata);
+
+            // Clear file inputs after successful upload
+            const thumbnailInput = document.getElementById(`thumbnail-${productNo}`);
+            const imageInput = document.getElementById(`image-${productNo}`);
+            if (thumbnailInput) thumbnailInput.value = '';
+            if (imageInput) imageInput.value = '';
+
+            // Clear deletion flags
+            delete productRow.dataset.thumbnailDeleted;
+            delete productRow.dataset.imagesDeleted;
 
             // Success feedback
             productRow.classList.add('saved');

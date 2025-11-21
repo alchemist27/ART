@@ -16,6 +16,7 @@ class CanvasManager {
         this.minZoom = 0.5; // 최소 줌 (50%)
         this.maxZoom = 2; // 최대 줌 (200%)
         this.zoomStep = 0.1; // 줌 단계 (10%)
+        this.purchaseList = new Map(); // 구매 예정 아이템 목록 (아이템 키 -> {itemData, quantity})
 
         this.init();
     }
@@ -271,17 +272,69 @@ class CanvasManager {
         }, 0);
     }
     
+    // 아이템의 고유 키 생성 (구매 목록 관리용)
+    getItemKey(itemData) {
+        const id = itemData.id || itemData.name;
+        const size = itemData.selectedSize || '';
+        return `${id}_${size}`;
+    }
+
     // 아이템을 캔버스에 추가
     addItem(itemData) {
-        return new Promise((resolve, reject) => {
-            // Firebase에서 온 데이터의 src 필드 사용
-            const imagePath = itemData.src;
+        return new Promise(async (resolve, reject) => {
+            // 여러 이미지가 있는지 확인
+            const images = itemData.images && itemData.images.length > 0
+                ? itemData.images
+                : [{ url: itemData.src }];
 
-            if (!imagePath) {
+            if (!images[0] || !images[0].url) {
                 console.error('이미지 경로가 없습니다:', itemData);
                 return reject(new Error('이미지 경로가 없습니다'));
             }
 
+            // 구매 목록에 추가 (아직 없는 경우에만, 맨 처음에 한 번만)
+            const itemKey = this.getItemKey(itemData);
+            if (!this.purchaseList.has(itemKey)) {
+                this.purchaseList.set(itemKey, {
+                    itemData: itemData,
+                    quantity: 1
+                });
+            }
+
+            const addedImages = [];
+            const centerX = this.canvas.width / 2;
+            const centerY = this.canvas.height / 2;
+            const offset = 30; // 각 이미지 간 오프셋
+
+            // 여러 이미지를 순차적으로 추가
+            for (let i = 0; i < images.length; i++) {
+                const imageInfo = images[i];
+                const imagePath = imageInfo.url;
+
+                try {
+                    const img = await this.loadImageToCanvas(imagePath, itemData, i, centerX, centerY, offset);
+                    addedImages.push(img);
+                } catch (error) {
+                    console.error(`이미지 로드 실패 [${i}]:`, imagePath, error);
+                }
+            }
+
+            if (addedImages.length === 0) {
+                return reject(new Error('모든 이미지 로드 실패'));
+            }
+
+            // 마지막 이미지를 활성화
+            this.canvas.setActiveObject(addedImages[addedImages.length - 1]);
+            this.hideWelcomeOverlay();
+            this.canvas.calcOffset();
+
+            resolve(addedImages);
+        });
+    }
+
+    // 이미지를 캔버스에 로드하는 헬퍼 함수
+    loadImageToCanvas(imagePath, itemData, index, centerX, centerY, offset) {
+        return new Promise((resolve, reject) => {
             fabric.Image.fromURL(imagePath, (img) => {
                 if (!img || !img.width) {
                     console.error('이미지 로드 실패:', imagePath);
@@ -293,24 +346,22 @@ class CanvasManager {
                 // sizeInMM 값이 있으면 실제 크기로 변환
                 if (itemData.sizeInMM && itemData.sizeInMM > 0) {
                     // mm를 픽셀로 변환
-                    // 1 inch = 25.4mm
-                    // 일반적인 화면 DPI = 96
                     const DPI = 96;
                     const MM_PER_INCH = 25.4;
                     const sizeInPixels = (itemData.sizeInMM / MM_PER_INCH) * DPI;
 
-                    // 이미지의 원본 비율을 유지하면서 크기 조정
                     const maxDimension = Math.max(img.width, img.height);
                     scale = sizeInPixels / maxDimension;
                 } else {
-                    // 기본 크기 (sizeInMM 값이 없을 때)
+                    // 기본 크기
                     const maxSize = 100;
                     scale = Math.min(maxSize / img.width, maxSize / img.height);
                 }
 
+                // 각 이미지마다 오프셋 적용
                 img.set({
-                    left: this.canvas.width / 2,
-                    top: this.canvas.height / 2,
+                    left: centerX + (index * offset),
+                    top: centerY + (index * offset),
                     scaleX: scale,
                     scaleY: scale,
                     originX: 'center',
@@ -318,12 +369,7 @@ class CanvasManager {
                 });
 
                 img.itemData = itemData;
-                this.canvas.add(img).setActiveObject(img);
-
-                this.hideWelcomeOverlay();
-
-                // 아이템 추가 후 캔버스 오프셋 재계산
-                this.canvas.calcOffset();
+                this.canvas.add(img);
 
                 resolve(img);
             }, { crossOrigin: 'anonymous' });
@@ -478,12 +524,11 @@ class CanvasManager {
     }
     
     updateSelectedItems() {
-        const objects = this.canvas.getObjects().filter(obj => obj.itemData);
         const selectedItemsContainer = document.getElementById('selectedItems');
 
         if (!selectedItemsContainer) return;
 
-        if (objects.length === 0) {
+        if (this.purchaseList.size === 0) {
             selectedItemsContainer.innerHTML = `
                 <div class="empty-state">
                     <i class="fas fa-inbox"></i>
@@ -493,73 +538,19 @@ class CanvasManager {
             return;
         }
 
-        // 동일한 아이템들을 그룹화
-        const groupedItems = this.groupItemsByType(objects);
-
         selectedItemsContainer.innerHTML = '';
 
-        // 역순으로 추가하여 최신 아이템이 맨 위에 오도록 함
-        for (let i = groupedItems.length - 1; i >= 0; i--) {
-            const group = groupedItems[i];
-            const selectedItem = this.createSelectedItemElement(group, i);
+        // 구매 목록을 순회하며 UI 생성
+        this.purchaseList.forEach((value, key) => {
+            const selectedItem = this.createSelectedItemElement(key, value);
             selectedItemsContainer.appendChild(selectedItem);
-        }
+        });
 
         // 현재 선택된 객체가 있으면 하이라이트
         const activeObject = this.canvas.getActiveObject();
         if (activeObject && activeObject.itemData) {
             this.highlightSelectedItemInList(activeObject);
         }
-    }
-
-    // 동일한 아이템들을 그룹화하여 수량 계산
-    groupItemsByType(objects) {
-        const groups = [];
-        const processedIndices = new Set();
-
-        objects.forEach((obj, index) => {
-            if (processedIndices.has(index)) return;
-
-            const itemData = obj.itemData;
-            const similarObjects = [obj];
-            processedIndices.add(index);
-
-            // 동일한 아이템 찾기
-            for (let i = index + 1; i < objects.length; i++) {
-                if (processedIndices.has(i)) continue;
-
-                const otherData = objects[i].itemData;
-                if (this.isSameItem(itemData, otherData)) {
-                    similarObjects.push(objects[i]);
-                    processedIndices.add(i);
-                }
-            }
-
-            groups.push({
-                representative: obj, // 대표 객체
-                quantity: similarObjects.length,
-                objects: similarObjects // 동일한 아이템들의 배열
-            });
-        });
-
-        return groups;
-    }
-
-    // 두 아이템이 동일한지 비교
-    isSameItem(itemData1, itemData2) {
-        // id가 있으면 id로 비교
-        if (itemData1.id && itemData2.id) {
-            return itemData1.id === itemData2.id &&
-                   itemData1.selectedSize === itemData2.selectedSize;
-        }
-
-        // id가 없으면 name과 image/src로 비교
-        const imagePath1 = itemData1.src || itemData1.image;
-        const imagePath2 = itemData2.src || itemData2.image;
-
-        return itemData1.name === itemData2.name &&
-               imagePath1 === imagePath2 &&
-               itemData1.selectedSize === itemData2.selectedSize;
     }
 
     highlightSelectedItemInList(canvasObject) {
@@ -572,18 +563,11 @@ class CanvasManager {
         const allItems = selectedItemsContainer.querySelectorAll('.selected-item');
         allItems.forEach(item => item.classList.remove('active'));
 
-        // 선택된 캔버스 객체의 인덱스 찾기
-        const canvasObjectIndex = this.canvas.getObjects().indexOf(canvasObject);
+        // 선택된 객체의 아이템 키 찾기
+        const itemKey = this.getItemKey(canvasObject.itemData);
 
-        // DOM에서 해당 객체를 포함하는 그룹 찾기
-        let targetItem = null;
-        for (const item of allItems) {
-            const objectIds = item.dataset.objectIds.split(',').map(id => parseInt(id));
-            if (objectIds.includes(canvasObjectIndex)) {
-                targetItem = item;
-                break;
-            }
-        }
+        // DOM에서 해당 아이템 키를 가진 요소 찾기
+        const targetItem = Array.from(allItems).find(item => item.dataset.itemKey === itemKey);
 
         if (targetItem) {
             targetItem.classList.add('active');
@@ -620,19 +604,13 @@ class CanvasManager {
         });
     }
     
-    createSelectedItemElement(group, groupIndex) {
-        const object = group.representative;
-        const groupObjects = group.objects;
-        const quantity = group.quantity;
-        const itemData = object.itemData;
+    createSelectedItemElement(itemKey, purchaseData) {
+        const itemData = purchaseData.itemData;
+        const quantity = purchaseData.quantity;
 
         const item = document.createElement('div');
         item.className = 'selected-item';
-        item.dataset.groupIndex = groupIndex; // 원본 그룹 인덱스 저장
-
-        // 그룹에 속한 모든 객체의 인덱스를 저장
-        const objectIds = groupObjects.map(obj => this.canvas.getObjects().indexOf(obj)).join(',');
-        item.dataset.objectIds = objectIds;
+        item.dataset.itemKey = itemKey;
 
         const img = document.createElement('img');
         // Firebase에서 온 데이터의 썸네일 또는 src 필드 사용
@@ -665,11 +643,10 @@ class CanvasManager {
         decreaseBtn.title = '수량 감소';
         decreaseBtn.onclick = (e) => {
             e.stopPropagation();
-            if (groupObjects.length > 1) {
-                // 마지막 객체 제거
-                const lastObj = groupObjects[groupObjects.length - 1];
-                this.canvas.remove(lastObj);
-                this.canvas.renderAll();
+            const currentQuantity = this.purchaseList.get(itemKey).quantity;
+            if (currentQuantity > 1) {
+                this.purchaseList.get(itemKey).quantity = currentQuantity - 1;
+                this.updateUI();
             }
         };
 
@@ -682,41 +659,10 @@ class CanvasManager {
         quantityInput.onchange = (e) => {
             e.stopPropagation();
             const newQuantity = parseInt(e.target.value);
-            const currentQuantity = groupObjects.length;
 
             if (newQuantity >= 1) {
-                if (newQuantity > currentQuantity) {
-                    // 수량 증가: 새 객체 추가
-                    const diff = newQuantity - currentQuantity;
-                    for (let i = 0; i < diff; i++) {
-                        this.addItem(itemData);
-                    }
-                } else if (newQuantity < currentQuantity) {
-                    // 수량 감소: 객체 제거
-                    const diff = currentQuantity - newQuantity;
-
-                    // 다중 삭제 시 성능 최적화
-                    if (diff > 1) {
-                        this.isLoadingState = true;
-
-                        for (let i = 0; i < diff; i++) {
-                            const lastObj = groupObjects[groupObjects.length - 1 - i];
-                            this.canvas.remove(lastObj);
-                        }
-
-                        this.canvas.renderAll();
-
-                        // 이벤트 재개 후 한 번만 업데이트
-                        this.isLoadingState = false;
-                        this.saveState();
-                        this.updateUI();
-                    } else {
-                        // 단일 삭제는 일반 처리
-                        const lastObj = groupObjects[groupObjects.length - 1];
-                        this.canvas.remove(lastObj);
-                        this.canvas.renderAll();
-                    }
-                }
+                this.purchaseList.get(itemKey).quantity = newQuantity;
+                this.updateUI();
             } else {
                 e.target.value = 1;
             }
@@ -728,8 +674,9 @@ class CanvasManager {
         increaseBtn.title = '수량 증가';
         increaseBtn.onclick = (e) => {
             e.stopPropagation();
-            // 동일한 아이템 추가
-            this.addItem(itemData);
+            const currentQuantity = this.purchaseList.get(itemKey).quantity;
+            this.purchaseList.get(itemKey).quantity = currentQuantity + 1;
+            this.updateUI();
         };
 
         quantityControl.appendChild(decreaseBtn);
@@ -743,11 +690,17 @@ class CanvasManager {
         deleteBtn.onclick = (e) => {
             e.stopPropagation();
 
-            // 다중 삭제 시 성능 최적화: 이벤트 일시 정지
-            if (groupObjects.length > 1) {
+            // 캔버스에서 해당 아이템 타입의 모든 객체 찾아서 삭제
+            const objectsToRemove = this.canvas.getObjects().filter(obj => {
+                if (!obj.itemData) return false;
+                return this.getItemKey(obj.itemData) === itemKey;
+            });
+
+            if (objectsToRemove.length > 1) {
+                // 다중 삭제 시 성능 최적화
                 this.isLoadingState = true;
 
-                groupObjects.forEach(obj => {
+                objectsToRemove.forEach(obj => {
                     this.canvas.remove(obj);
                 });
 
@@ -755,13 +708,16 @@ class CanvasManager {
 
                 // 이벤트 재개 후 한 번만 업데이트
                 this.isLoadingState = false;
-                this.saveState();
-                this.updateUI();
-            } else {
-                // 단일 객체는 일반 삭제 (이벤트 자동 트리거)
-                this.canvas.remove(groupObjects[0]);
-                this.canvas.renderAll();
+            } else if (objectsToRemove.length === 1) {
+                // 단일 객체는 일반 삭제
+                this.canvas.remove(objectsToRemove[0]);
             }
+
+            // 구매 목록에서 제거
+            this.purchaseList.delete(itemKey);
+
+            this.saveState();
+            this.updateUI();
         };
 
         actions.appendChild(quantityControl);
@@ -773,10 +729,17 @@ class CanvasManager {
         item.appendChild(info);
         item.appendChild(actions);
 
-        // 클릭 시 첫 번째 객체 선택
+        // 클릭 시 캔버스에서 해당 아이템 타입의 첫 번째 객체 선택
         item.onclick = () => {
-            this.canvas.setActiveObject(groupObjects[0]);
-            this.canvas.renderAll();
+            const matchingObj = this.canvas.getObjects().find(obj => {
+                if (!obj.itemData) return false;
+                return this.getItemKey(obj.itemData) === itemKey;
+            });
+
+            if (matchingObj) {
+                this.canvas.setActiveObject(matchingObj);
+                this.canvas.renderAll();
+            }
         };
 
         return item;
@@ -841,6 +804,7 @@ class CanvasManager {
 
         this.canvas.clear();
         this.currentBackground = null;
+        this.purchaseList.clear(); // 구매 목록 초기화
 
         const overlay = document.getElementById('canvasOverlay');
         if (overlay) {
@@ -849,6 +813,7 @@ class CanvasManager {
         }
 
         this.saveState();
+        this.updateUI(); // UI 업데이트
     }
 
     downloadImage() {
