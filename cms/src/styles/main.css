@@ -1874,11 +1874,12 @@ body {
 /* Image Upload Container Styles */
 .image-upload-container {
     display: flex;
+    flex-direction: row;
+    align-items: flex-start;
     gap: 6px;
     width: 100%;
     height: 100%;
-    justify-content: center;
-    align-items: center;
+    justify-content: flex-start;
 }
 
 .product-input .image-upload-container {
@@ -1892,6 +1893,8 @@ body {
     gap: 6px;
     min-height: 45px;
     padding: 4px;
+    flex: 1;
+    max-width: calc(100% - 60px); /* 버튼 공간 확보 */
 }
 
 /* 썸네일 미리보기 - 기본 크기 유지 */
@@ -1908,7 +1911,7 @@ body {
 
 /* 다중 이미지 미리보기 - 더 작게, 1줄에 2개 */
 [id^="image-preview-"] {
-    max-width: 80px;
+    max-width: calc(32px * 2 + 6px + 8px); /* 이미지 2개 + gap + padding */
 }
 
 [id^="image-preview-"] .image-preview-item {
@@ -1920,6 +1923,7 @@ body {
     border: 2px solid var(--border-color);
     background: var(--background);
     transition: all 0.2s ease;
+    flex-shrink: 0; /* 크기 고정 */
 }
 
 .image-preview-item {

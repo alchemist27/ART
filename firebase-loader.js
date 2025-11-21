@@ -46,7 +46,9 @@ async function loadProductsFromFirebase() {
 
                 // keywords 배열 생성 (CMS에서 입력한 키워드만)
                 const keywords = data.keywords
-                    ? data.keywords.split(',').map(k => k.trim()).filter(k => k)
+                    ? (Array.isArray(data.keywords)
+                        ? data.keywords
+                        : data.keywords.split(',').map(k => k.trim()).filter(k => k))
                     : [];
 
                 // tags 배열 생성 (필터링용 - 모든 카테고리 값 파싱)
@@ -74,7 +76,9 @@ async function loadProductsFromFirebase() {
 
                 // 색상 태그 추가
                 if (data.colors) {
-                    const colorArray = data.colors.split(',').map(c => c.trim().toLowerCase()).filter(c => c);
+                    const colorArray = Array.isArray(data.colors)
+                        ? data.colors.map(c => c.trim().toLowerCase()).filter(c => c)
+                        : data.colors.split(',').map(c => c.trim().toLowerCase()).filter(c => c);
                     tags.push(...colorArray);
                 }
 
@@ -110,7 +114,9 @@ async function loadProductsFromFirebase() {
                     categories: categories,  // 카테고리 배열 (1~2개)
                     keywords: keywords,  // 키워드 배열 (CMS 입력값)
                     direction: data.direction || null,
-                    color: data.colors ? data.colors.split(',')[0].trim() : null,
+                    color: data.colors
+                        ? (Array.isArray(data.colors) ? data.colors[0] : data.colors.split(',')[0].trim())
+                        : null,
                     size: {
                         width_mm: data.sizeInMM || 20,
                         height_mm: data.sizeInMM || 20

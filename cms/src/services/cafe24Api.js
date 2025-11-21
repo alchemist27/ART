@@ -21,50 +21,55 @@ class Cafe24ApiService {
 
     async isAuthenticated() {
         const tokens = await this.tokenService.getTokens();
-        
+
         if (!tokens) {
             return false;
         }
-        
+
         // If tokens exist but are expired, try to refresh
         if (tokens.expired && tokens.refreshToken) {
-            try {
-                console.log('Tokens expired, attempting to refresh...');
-                await this.refreshAccessToken();
+            console.log('Tokens expired, attempting to refresh...');
+            const refreshSuccess = await this.refreshAccessToken();
+
+            if (refreshSuccess) {
                 const newTokens = await this.tokenService.getTokens();
                 if (newTokens && !newTokens.expired) {
                     this.accessToken = newTokens.accessToken;
                     this.refreshToken = newTokens.refreshToken;
                     return true;
                 }
-            } catch (error) {
-                console.error('Failed to refresh token:', error);
-                return false;
             }
+
+            // Refresh failed, return false to prompt re-authentication
+            return false;
         }
-        
+
         // Tokens exist and are not expired
         if (!tokens.expired) {
             this.accessToken = tokens.accessToken;
             this.refreshToken = tokens.refreshToken;
             return true;
         }
-        
+
         return false;
     }
 
     async getAccessToken() {
         const tokens = await this.tokenService.getTokens();
-        
+
         if (!tokens) {
             throw new Error('Not authenticated with Cafe24');
         }
 
         if (tokens.expired && tokens.refreshToken) {
             // 토큰이 만료되면 자동으로 갱신
-            await this.refreshAccessToken();
-            const newTokens = await this.tokenService.getTokens();
-            return newTokens.accessToken;
+            const refreshSuccess = await this.refreshAccessToken();
+            if (refreshSuccess) {
+                const newTokens = await this.tokenService.getTokens();
+                return newTokens.accessToken;
+            }
+            // Refresh failed
+            throw new Error('Token expired and refresh failed. Please re-authenticate.');
         }
 
         return tokens.accessToken;
@@ -108,9 +113,11 @@ class Cafe24ApiService {
     async refreshAccessToken() {
         try {
             const tokens = await this.tokenService.getTokens();
-            
+
             if (!tokens || !tokens.refreshToken) {
-                throw new Error('No refresh token available');
+                console.log('No refresh token available, clearing tokens...');
+                await this.clearTokens();
+                return false;
             }
 
             const response = await fetch('/api/auth/cafe24/refresh', {
@@ -127,16 +134,19 @@ class Cafe24ApiService {
             });
 
             if (!response.ok) {
-                throw new Error('Failed to refresh token');
+                console.log('Token refresh failed, clearing tokens and requiring re-authentication...');
+                await this.clearTokens();
+                return false;
             }
 
             const data = await response.json();
             await this.setTokens(data.access_token, data.refresh_token, data.expires_in || 7200);
-            return data;
+            console.log('Token refreshed successfully');
+            return true;
         } catch (error) {
-            console.error('Token refresh error:', error);
+            console.log('Token refresh error, clearing tokens:', error.message);
             await this.clearTokens();
-            throw error;
+            return false;
         }
     }
 
@@ -201,8 +211,12 @@ class Cafe24ApiService {
 
             if (response.status === 401) {
                 // 토큰이 만료되었으면 갱신 후 재시도
-                await this.refreshAccessToken();
-                return await this.makeApiRequest(endpoint, options);
+                const refreshSuccess = await this.refreshAccessToken();
+                if (refreshSuccess) {
+                    return await this.makeApiRequest(endpoint, options);
+                }
+                // Refresh failed, throw error to prompt re-authentication
+                throw new Error('Authentication failed. Please re-authenticate with Cafe24.');
             }
 
             if (!response.ok) {
