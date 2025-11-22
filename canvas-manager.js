@@ -234,6 +234,7 @@ class CanvasManager {
             },
             'object:removed': () => {
                 if (!this.isLoadingState) {
+                    this.cleanupPurchaseList(); // 구매 목록 정리
                     this.saveState();
                     this.updateUI();
                 }
@@ -278,6 +279,28 @@ class CanvasManager {
         const id = itemData.id || itemData.name;
         const size = itemData.selectedSize || '';
         return `${id}_${size}`;
+    }
+
+    // 캔버스에 없는 아이템을 구매 목록에서 제거
+    cleanupPurchaseList() {
+        const itemKeysToRemove = [];
+
+        // 구매 목록의 각 아이템이 캔버스에 존재하는지 확인
+        this.purchaseList.forEach((value, itemKey) => {
+            const existsInCanvas = this.canvas.getObjects().some(obj => {
+                return obj.itemData && this.getItemKey(obj.itemData) === itemKey;
+            });
+
+            // 캔버스에 없으면 삭제 대상에 추가
+            if (!existsInCanvas) {
+                itemKeysToRemove.push(itemKey);
+            }
+        });
+
+        // 삭제 대상 제거
+        itemKeysToRemove.forEach(key => {
+            this.purchaseList.delete(key);
+        });
     }
 
     // 아이템을 캔버스에 추가
@@ -423,7 +446,14 @@ class CanvasManager {
         if (this.historyIndex < this.history.length - 1) {
             this.history = this.history.slice(0, this.historyIndex + 1);
         }
-        this.history.push(this.canvas.toDatalessJSON());
+
+        // 캔버스 상태 + 구매 목록 함께 저장
+        const state = {
+            canvas: this.canvas.toDatalessJSON(),
+            purchaseList: Array.from(this.purchaseList.entries()) // Map을 배열로 변환
+        };
+
+        this.history.push(state);
         if (this.history.length > this.maxHistorySize) {
             this.history.shift();
         }
@@ -447,9 +477,21 @@ class CanvasManager {
     
     loadState(state) {
         this.isLoadingState = true;
-        this.canvas.loadFromJSON(state, () => {
+
+        // 구매 목록 복원
+        if (state.purchaseList) {
+            this.purchaseList = new Map(state.purchaseList);
+        } else {
+            // 이전 버전 호환성 (구매 목록 없는 경우)
+            this.purchaseList.clear();
+        }
+
+        // 캔버스 복원
+        const canvasState = state.canvas || state; // 이전 버전 호환성
+        this.canvas.loadFromJSON(canvasState, () => {
             this.canvas.renderAll();
             this.isLoadingState = false;
+            this.lastPurchaseListSize = this.purchaseList.size; // 크기 동기화
             this.updateUI();
         });
     }
@@ -803,7 +845,7 @@ class CanvasManager {
                     top: activeObject.top + 20,
                 });
                 this.canvas.add(cloned).setActiveObject(cloned);
-            });
+            }, ['itemData']);
         }
     }
 
