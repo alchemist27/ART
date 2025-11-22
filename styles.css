@@ -252,7 +252,7 @@ body::before {
 .panel-toggle {
     position: absolute;
     top: 50%;
-    transform: translateY(-50%);
+    margin-top: -20px; /* 높이의 절반 (40px / 2) */
     width: 40px;
     height: 40px;
     background: linear-gradient(135deg, rgba(255, 255, 255, 0.95) 0%, rgba(255, 255, 255, 0.9) 100%);
@@ -265,30 +265,31 @@ body::before {
     align-items: center;
     justify-content: center;
     z-index: 10001;
-    transition: all var(--transition-fast);
+    transition: background var(--transition-fast), color var(--transition-fast), box-shadow var(--transition-fast), border-color var(--transition-fast);
     box-shadow: 0 4px 12px rgba(255, 107, 157, 0.2), 0 2px 4px rgba(0, 0, 0, 0.1);
+    will-change: left, right;
 }
 
 .panel-toggle:hover {
     background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-hover) 100%);
     color: white;
-    transform: translateY(-50%) scale(1.15);
+    transform: scale(1.15);
     box-shadow: 0 6px 20px rgba(255, 107, 157, 0.4), 0 4px 8px rgba(0, 0, 0, 0.15);
     border-color: var(--primary-color);
 }
 
 .panel-toggle:active {
-    transform: translateY(-50%) scale(0.95);
+    transform: scale(0.95);
 }
 
 .left-toggle {
     left: calc(320px + var(--spacing-md) - 20px);
-    transition: left var(--transition-normal), transform var(--transition-fast), background var(--transition-fast), color var(--transition-fast), box-shadow var(--transition-fast), border-color var(--transition-fast);
+    transition: left var(--transition-normal), background var(--transition-fast), color var(--transition-fast), box-shadow var(--transition-fast), border-color var(--transition-fast), transform var(--transition-fast);
 }
 
 .right-toggle {
     right: calc(340px + var(--spacing-md) - 20px);
-    transition: right var(--transition-normal), transform var(--transition-fast), background var(--transition-fast), color var(--transition-fast), box-shadow var(--transition-fast), border-color var(--transition-fast);
+    transition: right var(--transition-normal), background var(--transition-fast), color var(--transition-fast), box-shadow var(--transition-fast), border-color var(--transition-fast), transform var(--transition-fast);
 }
 
 .panel-toggle i {
@@ -319,12 +320,10 @@ body::before {
 /* When collapsed, move toggle to screen edge */
 .main-container.left-collapsed .left-toggle {
     left: var(--spacing-md);
-    transition: left var(--transition-normal), transform var(--transition-fast), background var(--transition-fast), color var(--transition-fast), box-shadow var(--transition-fast), border-color var(--transition-fast);
 }
 
 .main-container.right-collapsed .right-toggle {
     right: var(--spacing-md);
-    transition: right var(--transition-normal), transform var(--transition-fast), background var(--transition-fast), color var(--transition-fast), box-shadow var(--transition-fast), border-color var(--transition-fast);
 }
 
 .main-container.left-collapsed .left-toggle i {
