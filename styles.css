@@ -318,19 +318,23 @@ body::before {
 }
 
 /* When collapsed, move toggle to screen edge */
-.main-container.left-collapsed .left-toggle {
+.main-container.left-collapsed .left-toggle,
+.main-container.both-collapsed .left-toggle {
     left: var(--spacing-md);
 }
 
-.main-container.right-collapsed .right-toggle {
+.main-container.right-collapsed .right-toggle,
+.main-container.both-collapsed .right-toggle {
     right: var(--spacing-md);
 }
 
-.main-container.left-collapsed .left-toggle i {
+.main-container.left-collapsed .left-toggle i,
+.main-container.both-collapsed .left-toggle i {
     transform: rotate(180deg);
 }
 
-.main-container.right-collapsed .right-toggle i {
+.main-container.right-collapsed .right-toggle i,
+.main-container.both-collapsed .right-toggle i {
     transform: rotate(180deg);
 }
 
